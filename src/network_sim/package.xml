@@ -5,7 +5,7 @@
   <version>0.1.0</version>
   <description>Integrated V2V communication model and TC controller for vehicle network simulation</description>
   <maintainer email="yeogyeom1@naver.com">kyg</maintainer>
-  <license>TODO</license>
+  <license>GPL-3.0-only</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

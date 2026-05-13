@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='user',
-    maintainer_email='user@todo.todo',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='kmk',
+    maintainer_email='kmk6061602@naver.com',
+    description='RealGazebo RTSP image viewer for drone camera streams',
+    license='GPL-3.0-only',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

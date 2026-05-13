@@ -3,9 +3,9 @@
 <package format="3">
   <name>image_viewer</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="user@todo.todo">user</maintainer>
-  <license>TODO: License declaration</license>
+  <description>RealGazebo RTSP image viewer for drone camera streams</description>
+  <maintainer email="kmk6061602@naver.com">kmk</maintainer>
+  <license>GPL-3.0-only</license>
   
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>

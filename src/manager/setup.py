@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='kmk',
     maintainer_email='kmk6061602@naver.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='RealGazebo PX4 ROS2 bridge and keyboard controller',
+    license='GPL-3.0-only',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

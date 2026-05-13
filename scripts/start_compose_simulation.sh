@@ -175,8 +175,15 @@ export MAVLINK_GCS_IP=$DOCKER_HOST_IP
 echo "MAVLink GCS IP: $MAVLINK_GCS_IP"
 
 # Check for host PX4 path and set if available
-if [[ -d "/home/kmk/ws/realgazebo/RealGazebo-PX4" ]]; then
-    export PX4_PATH="/home/kmk/ws/realgazebo/RealGazebo-PX4"
+# Override by setting PX4_PATH environment variable before running
+if [[ -z "${PX4_PATH}" ]]; then
+    # Default paths to check
+    for candidate in "/home/kmk/ws/realgazebo/RealGazebo-PX4" "${PROJECT_DIR}/../RealGazebo-PX4"; do
+        if [[ -d "$candidate" ]]; then
+            export PX4_PATH="$candidate"
+            break
+        fi
+    done
 fi
 
 # GPU configuration

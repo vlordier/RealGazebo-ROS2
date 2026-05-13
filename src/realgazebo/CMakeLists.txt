@@ -119,7 +119,8 @@ function(download_with_verification filename)
   )
 
   if(NOT md5_code EQUAL 0)
-    message(FATAL_ERROR "Failed to download ${filename}.md5 from ${BASE_URL}")
+    message(WARNING "Failed to download ${filename}.md5 from ${BASE_URL} - skipping mesh download (meshes needed at runtime only)")
+    return()
   endif()
 
   # Check if we need to download
@@ -152,7 +153,7 @@ function(download_with_verification filename)
       RESULT_VARIABLE status_code
     )
     if(NOT status_code EQUAL 0)
-      message(FATAL_ERROR "Failed to download ${filename} from ${BASE_URL}")
+      message(WARNING "Failed to download ${filename} from ${BASE_URL} - mesh file will be missing (runtime only)")
     else()
       message(STATUS "${filename} downloaded successfully")
     endif()

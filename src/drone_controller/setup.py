@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='kmk',
     maintainer_email='kmk6061602@naver.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='RealGazebo drone controller node for autonomous mission execution',
+    license='GPL-3.0-only',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
