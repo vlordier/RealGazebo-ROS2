@@ -102,6 +102,8 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     build_targets = config.get('build_targets', {}) or {}
     vehicles = config.get('vehicles', {})
 
+    workspace = os.environ.get('WORKSPACE', '/home/user/realgazebo/RealGazebo-ROS2')
+
     vehicle_models = []
     vmeta = []
     for vid, vehicle in vehicles.items():
@@ -165,7 +167,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                 f'bash -c "exec > >(sed \\\"s/^/[vehicle_{m["vid"]}] /\\\") 2>&1; '
                 f'sleep $(({m["vid"]} * 5)); '
                 f'source /opt/ros/jazzy/setup.bash && '
-                f'source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && '
+                f'source {workspace}/install/setup.bash && '
                 f'ros2 launch realgazebo vehicle.launch.py '
                 f'instance_id:={m["vid"]} vehicle_type:={m["vtype"]} firmware:={m["v_firmware"]} '
                 f'spawnpoint:={spawnpoint_str} px4_path:={px4_path} '

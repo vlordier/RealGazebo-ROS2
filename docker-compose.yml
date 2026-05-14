@@ -52,7 +52,7 @@ services:
       timeout: 10s
       retries: 30
       start_period: 60s
-    command: bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo gazebo.launch.py headless:=${HEADLESS:-true} verbose:=${VERBOSE:-false} world:=${WORLD:-c-track} px4_path:=${PX4_PATH:-/home/user/realgazebo/RealGazebo-PX4} unreal_ip:=${UNREAL_IP:-host.docker.internal} unreal_port:=${UNREAL_PORT:-5005}"
+    command: bash -c "source /opt/ros/jazzy/setup.bash && source ${WORKSPACE:-/home/user/realgazebo/RealGazebo-ROS2}/install/setup.bash && ros2 launch realgazebo gazebo.launch.py headless:=${HEADLESS:-true} verbose:=${VERBOSE:-false} world:=${WORLD:-c-track} px4_path:=${PX4_PATH:-/home/user/realgazebo/RealGazebo-PX4} unreal_ip:=${UNREAL_IP:-host.docker.internal} unreal_port:=${UNREAL_PORT:-5005}"
     deploy:
       resources:
         limits:
@@ -87,9 +87,9 @@ services:
         condition: service_healthy
     command: bash -c "
       source /opt/ros/jazzy/setup.bash &&
-      source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash &&
+      source ${WORKSPACE:-/home/user/realgazebo/RealGazebo-ROS2}/install/setup.bash &&
       pip install --break-system-packages dora-runtime dora-ros2-bridge 2>/dev/null &&
-      cd /home/user/realgazebo/RealGazebo-ROS2/realgazebo-dora &&
+      cd ${WORKSPACE:-/home/user/realgazebo/RealGazebo-ROS2}/realgazebo-dora &&
       dora up && dora start dataflow.yml --name realgazebo --detach &&
       sleep infinity
     "
