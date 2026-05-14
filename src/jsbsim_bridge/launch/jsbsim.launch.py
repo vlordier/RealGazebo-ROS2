@@ -32,14 +32,16 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     if gazebo_bridge:
-        # Bridge JSBSim pose to Gazebo so it appears visually
+        # Bridge JSBSim pose → Gazebo (ROS publishes, Gazebo subscribes)
+        # ] means ROS_TO_GZ direction (JSBSim → Gazebo visual)
         nodes.append(Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
             name=f'jsbsim_gz_bridge_{instance_id}',
             arguments=[
-                f'/{ns}/pose@geometry_msgs/msg/PoseStamped[gz.msgs.Pose',
-                f'/{ns}/pose_ground_truth@geometry_msgs/msg/PoseStamped[gz.msgs.Pose',
+                f'/{ns}/pose]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
+                f'/{ns}/pose_ground_truth]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
+                f'/{ns}/velocity]geometry_msgs/msg/TwistStamped@gz.msgs.Twist',
             ],
             output='screen',
         ))

@@ -1304,6 +1304,7 @@
       <rotorVelocitySlowdownSim>20</rotorVelocitySlowdownSim>
       <motorType>velocity</motorType>
     </plugin>
+{% if firmware == "px4" %}
     <plugin filename="MotorFailureROS2" name="custom::MotorFailureROS2System">
     </plugin>
     <plugin filename="ServoFailureROS2" name="custom::ServoFailureROS2System">
@@ -1315,6 +1316,7 @@
         <servoJoint name="rudder_joint"/>
       </servoJointList>
     </plugin>
+{% endif %}
     <plugin filename="libRealGazebo.so" name="custom::RealGazebo">
       <unreal_ip>{{ unreal_ip }}</unreal_ip>
       <unreal_port>{{ unreal_port }}</unreal_port>

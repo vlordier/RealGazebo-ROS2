@@ -153,7 +153,27 @@ function(download_with_verification filename)
       RESULT_VARIABLE status_code
     )
     if(NOT status_code EQUAL 0)
-      message(WARNING "Failed to download ${filename} from ${BASE_URL} - mesh file will be missing (runtime only)")
+      message(WARNING "Failed to download ${filename} — generating fallback STL")
+      # Generate a minimal flat-box STL so the world can still load
+      file(WRITE ${FILE_PATH}
+        "solid fallback\n"
+        "  facet normal 0 0 1\n"
+        "    outer loop\n"
+        "      vertex -50 -50 0\n"
+        "      vertex  50 -50 0\n"
+        "      vertex  50  50 0\n"
+        "    endloop\n"
+        "  endfacet\n"
+        "  facet normal 0 0 1\n"
+        "    outer loop\n"
+        "      vertex -50 -50 0\n"
+        "      vertex  50  50 0\n"
+        "      vertex -50  50 0\n"
+        "    endloop\n"
+        "  endfacet\n"
+        "endsolid fallback\n"
+      )
+      message(STATUS "Fallback STL generated for ${filename}")
     else()
       message(STATUS "${filename} downloaded successfully")
     endif()
