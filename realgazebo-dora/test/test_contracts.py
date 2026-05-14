@@ -4,16 +4,19 @@ Verifies that UE5 UDP packet encoding matches the C++ struct layout
 from RealGazebo.cpp (header packed as <BBB, then 7 floats).
 """
 
-import unittest
-import sys
 import os
 import struct
+import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ros2-bridge'))
 
 from ros2_bridge.contracts import (
-    VehiclePose, MotorRPM, SimReset, parse_ue5_packet,
     PACKED_HEADER_FMT,
+    MotorRPM,
+    SimReset,
+    VehiclePose,
+    parse_ue5_packet,
 )
 
 

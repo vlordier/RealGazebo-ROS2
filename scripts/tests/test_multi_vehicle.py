@@ -11,9 +11,6 @@ Usage:
 import argparse
 import subprocess
 import sys
-import time
-import json
-import os
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -90,7 +87,7 @@ def test_gazebo_topics(gazebo_container: str = "gazebo") -> bool:
         capture_output=True, text=True, timeout=15
     )
     if result.returncode != 0:
-        print(f"  FAIL: Cannot reach Gazebo container")
+        print("  FAIL: Cannot reach Gazebo container")
         return False
     topic_count = int(result.stdout.strip() or "0")
     print(f"  Gazebo topics: {topic_count}")
@@ -105,7 +102,7 @@ def test_vehicle_topics(container: str, expected: list[str]) -> bool:
     count, found = check_ros2_topics(container, expected)
     print(f"  Topics in {container}: {count}/{len(expected)} expected")
     if count == 0:
-        print(f"  FAIL: No expected topics found")
+        print("  FAIL: No expected topics found")
         return False
     print(f"  Found: {found}")
     return True
@@ -119,9 +116,9 @@ def test_network_sim_diagnostics(container: str = "gazebo") -> bool:
         capture_output=True, text=True, timeout=10
     )
     if result.returncode == 0 and int(result.stdout.strip() or "0") > 0:
-        print(f"  OK: /diagnostics topic present")
+        print("  OK: /diagnostics topic present")
         return True
-    print(f"  WARN: /diagnostics topic not found (network_sim may not be running)")
+    print("  WARN: /diagnostics topic not found (network_sim may not be running)")
     return True  # Not a hard failure
 
 

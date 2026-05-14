@@ -1,5 +1,5 @@
 """Launch file for V2V network diagnostics."""
-import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 

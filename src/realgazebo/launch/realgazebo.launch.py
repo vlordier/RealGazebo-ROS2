@@ -1,32 +1,29 @@
-import os
-import random
-import yaml
 import ast
+import os
 import xml.etree.ElementTree as ET
 
-from jinja2 import Environment, FileSystemLoader
-
-from collections import defaultdict
-
-from ament_index_python import get_package_prefix
-from ament_index_python.packages import get_package_share_directory, get_package_prefix
-
 import launch
+import yaml
+from ament_index_python import get_package_prefix
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from jinja2 import Environment, FileSystemLoader
 from launch import LaunchDescription
-from launch.substitutions import PathJoinSubstitution, Command, FindExecutable, TextSubstitution
-from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import LaunchConfiguration
-from launch.actions import ExecuteProcess
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
+    ExecuteProcess,
     IncludeLaunchDescription,
+    OpaqueFunction,
+    RegisterEventHandler,
     SetEnvironmentVariable,
 )
-from launch.event_handlers import OnProcessStart, OnProcessExit
-from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessExit
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import (
+    FindExecutable,
+    LaunchConfiguration,
+    PathJoinSubstitution,
+)
+from launch_ros.actions import Node
 
 support_vehicle = ["x500", "x500_lidar_2d", "rover_ackermann", "lc_62", "boat"]
 support_obstacle = ["rock"]
@@ -293,7 +290,7 @@ def launch_setup(context, *args, **kwargs):
                                             f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds')
 
     # Build plugin paths for all px4_targets
-    plugin_paths = [f"$GZ_SIM_SYSTEM_PLUGIN_PATH"]
+    plugin_paths = ["$GZ_SIM_SYSTEM_PLUGIN_PATH"]
     for target_name, target_path in px4_targets.items():
         plugin_paths.append(f"{target_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins")
     plugin_paths.append(f"{current_package_prefix}/lib/realgazebo")
@@ -310,19 +307,19 @@ def launch_setup(context, *args, **kwargs):
     
     # generate world file to /tmp/c-track.sdf if needed
     env = Environment(loader=FileSystemLoader(os.path.join(current_package_path, 'models', 'c-track')))
-    world_model = env.get_template(f'model.sdf.jinja')
+    world_model = env.get_template('model.sdf.jinja')
     output_world = world_model.render(world=world)
     world_model_path = os.path.join(current_package_path, 'models', 'c-track', 'model.sdf')
     with open(world_model_path, 'w') as f:
         f.write(output_world)
-        print(f'c-track.sdf is generated')
+        print('c-track.sdf is generated')
 
     # it sometimes need to set GZ_IP to 127.0.0.1 or not so just use it
     gz_ip_env = SetEnvironmentVariable('GZ_IP', '127.0.0.1')
 
     gz_sim_pkg = get_package_share_directory('ros_gz_sim')
 
-    world_file_path = os.path.join(current_package_path, 'worlds', f'c-track.sdf')
+    world_file_path = os.path.join(current_package_path, 'worlds', 'c-track.sdf')
 
     verbose_level = 4 if verbose else 1
     gazebo_node = IncludeLaunchDescription(

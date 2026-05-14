@@ -9,9 +9,8 @@ Usage:
 """
 
 import rclpy
-from rclpy.node import Node
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from std_srvs.srv import SetBool
+from rclpy.node import Node
 
 # ── Constants ────────────────────────────────────────────────────────────────
 

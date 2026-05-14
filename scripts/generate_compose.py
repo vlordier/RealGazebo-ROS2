@@ -16,11 +16,11 @@ It reads the existing vehicle YAML format (same as realgazebo.launch.py)
 and generates docker-compose.override.yml with vehicle services and networks.
 """
 
-import sys
-import os
-import ast
-import yaml
 import argparse
+import ast
+import os
+
+import yaml
 from pydantic import BaseModel, Field
 
 
@@ -249,9 +249,9 @@ def main():
     for vid, v in sorted(vehicles.items()):
         if v.get('type') not in support_obstacle:
             print(f"    - vehicle_{vid}: {v['type']} at {v['spawnpoint']}")
-    print(f"\nTo start the simulation:")
+    print("\nTo start the simulation:")
     print(f"  cd {os.path.dirname(output_path)}")
-    print(f"  docker compose up -d")
+    print("  docker compose up -d")
 
 
 if __name__ == '__main__':

@@ -4,11 +4,11 @@ Tests the control methods by mocking ROS2 dependencies.
 To run: python3 -m pytest src/drone_controller/test/ -v
 """
 
+import os
+import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
-import types
-import sys
-import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -57,6 +57,7 @@ sys.modules['std_msgs.msg'] = mock_std_msgs.msg
 
 # Now set up the message types on the mocks before importing drone_controller
 from unittest.mock import MagicMock
+
 
 class MockVehicleStatus:
     ARMING_STATE_ARMED = 1
@@ -109,7 +110,8 @@ for name, cls in [("LogMessage", MagicMock), ("VehicleStatus", MockVehicleStatus
 mock_std_msgs.msg.String = MagicMock
 
 from drone_controller.drone_controller import (
-    DroneController, NavState, MissionTick, TAKEOFF_ALTITUDE_M, MOVE_DISTANCE_NORTH_M,
+    DroneController,
+    NavState,
 )
 
 

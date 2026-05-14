@@ -1,18 +1,19 @@
-import time
+import math
 import os
+from enum import Enum
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 
-from px4_msgs.msg import LogMessage, VehicleStatus, OffboardControlMode, TrajectorySetpoint, VehicleCommandAck, \
-    VehicleCommand, VehicleLocalPosition, VehicleGlobalPosition
-
-from std_msgs.msg import String
-
-from enum import Enum
-
-import math
+from px4_msgs.msg import (
+    OffboardControlMode,
+    TrajectorySetpoint,
+    VehicleCommand,
+    VehicleGlobalPosition,
+    VehicleLocalPosition,
+    VehicleStatus,
+)
 
 # ── Nav State Enum ──────────────────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ class DroneController(Node):
         offboard_cmd.param2 = PX4_CUSTOM_MAIN_MODE_OFFBOARD
         offboard_cmd.from_external = True
         self.vehicle_command_publisher_.publish(offboard_cmd)
-        self.get_logger().info(f"[dc] Offboard mode command sent")
+        self.get_logger().info("[dc] Offboard mode command sent")
 
     def control_setpoint(self, x, y, z, heading=None):
         self.last_command = "move"
@@ -186,7 +187,7 @@ class DroneController(Node):
         landing_cmd.command = VehicleCommand.VEHICLE_CMD_NAV_LAND
         landing_cmd.from_external = True
         self.vehicle_command_publisher_.publish(landing_cmd)
-        self.get_logger().info(f"[dc] Land command sent")
+        self.get_logger().info("[dc] Land command sent")
 
     def initialize_node(self):
         self.declare_parameter('system_id', 1)

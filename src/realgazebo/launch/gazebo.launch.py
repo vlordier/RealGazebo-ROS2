@@ -7,21 +7,18 @@ Vehicles are spawned from separate vehicle containers.
 
 import os
 
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from jinja2 import Environment, FileSystemLoader
-
-from ament_index_python.packages import get_package_share_directory, get_package_prefix
-
 from launch import LaunchDescription
-from launch.substitutions import PathJoinSubstitution
-from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
     IncludeLaunchDescription,
+    OpaqueFunction,
     SetEnvironmentVariable,
 )
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 
 
 def launch_setup(context, *args, **kwargs):
@@ -67,7 +64,7 @@ def launch_setup(context, *args, **kwargs):
     world_model_path = os.path.join(current_package_path, 'models', 'c-track', 'model.sdf')
     with open(world_model_path, 'w') as f:
         f.write(output_world)
-        print(f'c-track model.sdf generated')
+        print('c-track model.sdf generated')
 
     # Generate vehicle SDF templates for all supported types
     # This is done in Gazebo container so vehicle containers can spawn them

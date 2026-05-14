@@ -17,3 +17,7 @@ realgazebo-dora/vehicle-monitor/vehicle_monitor.egg-info
 out/
 .pytest_cache/
 __pycache__/
+docs/
+*.egg-info/
+.ruff_cache/
+.mypy_cache/

@@ -12,7 +12,7 @@ Usage:
     udp_packet = pose.to_ue5_packet()    # → bytes for UE5 UDP socket
 """
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 # ── Vehicle Pose ─────────────────────────────────────────────────────────────
 

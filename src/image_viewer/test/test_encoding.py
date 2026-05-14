@@ -4,16 +4,21 @@ Tests the ENCODING_CONFIG table and channel constants.
 The encoding module requires cv2, so this test skips gracefully if cv2 unavailable.
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 try:
     from image_viewer.encoding import (
-        ENCODING_CONFIG, RGB_CHANNEL_COUNT, RGBA_CHANNEL_COUNT, MONO_CHANNEL_COUNT,
-        LIFECYCLE_SERVICE_TIMEOUT_S, GET_STATE_TIMEOUT_S, OPENCV_WAITKEY_MS,
+        ENCODING_CONFIG,
+        GET_STATE_TIMEOUT_S,
+        LIFECYCLE_SERVICE_TIMEOUT_S,
+        MONO_CHANNEL_COUNT,
+        OPENCV_WAITKEY_MS,
+        RGB_CHANNEL_COUNT,
+        RGBA_CHANNEL_COUNT,
     )
     HAS_CV2 = True
 except ImportError:

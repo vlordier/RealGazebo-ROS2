@@ -1,5 +1,5 @@
 """Launch JSBSim bridge with Gazebo visual bridge."""
-import os
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration

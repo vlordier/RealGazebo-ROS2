@@ -1,20 +1,18 @@
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
-
-from sensor_msgs.msg import Image
-
-from lifecycle_msgs.srv import ChangeState, GetState
-from lifecycle_msgs.msg import Transition, State
-
 import cv2
 import numpy as np
+import rclpy
+from lifecycle_msgs.msg import State, Transition
+from lifecycle_msgs.srv import ChangeState, GetState
+from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
+from sensor_msgs.msg import Image
 
 from image_viewer.encoding import (
-    ENCODING_CONFIG, RGB_CHANNEL_COUNT,
-    LIFECYCLE_SERVICE_TIMEOUT_S,
+    ENCODING_CONFIG,
     GET_STATE_TIMEOUT_S,
+    LIFECYCLE_SERVICE_TIMEOUT_S,
     OPENCV_WAITKEY_MS,
+    RGB_CHANNEL_COUNT,
 )
 
 

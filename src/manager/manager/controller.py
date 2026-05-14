@@ -1,13 +1,10 @@
-import time
 
 import rclpy
-from rclpy.node import Node
-
 from geometry_msgs.msg import Twist
+from rclpy.node import Node
 from std_msgs.msg import String
-import sys
 
-from manager.constants import KEY_BINDINGS, USAGE_MESSAGE, MAIN_CMD_TOPIC_TEMPLATE
+from manager.constants import KEY_BINDINGS, MAIN_CMD_TOPIC_TEMPLATE, USAGE_MESSAGE
 
 
 def parse_vehicle_count(node: Node) -> int:
@@ -69,9 +66,9 @@ def main(args=None):
 def _read_key() -> str | None:
     """Read a single keypress from stdin, or None if no key available."""
     import select as _select
+    import sys as _sys
     import termios as _termios
     import tty as _tty
-    import sys as _sys
     settings = _termios.tcgetattr(_sys.stdin)
     try:
         _tty.setcbreak(_sys.stdin.fileno())

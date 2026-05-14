@@ -1,8 +1,8 @@
 """Tests for PX4 ROS2 bridge command handling and constants."""
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 

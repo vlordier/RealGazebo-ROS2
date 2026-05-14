@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main, realgazebo-*]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install ruff pre-commit mypy pydantic
+
+      - name: Ruff lint
+        run: ruff check --output-format=github .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: MyPy type check
+        run: mypy --ignore-missing-imports realgazebo-dora/ src/image_viewer/ src/manager/ src/drone_controller/ src/jsbsim_bridge/ scripts/ || true
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install pytest hypothesis pydantic structlog
+
+      - name: Run tests (ROS2-independent)
+        run: |
+          python -m pytest realgazebo-dora/test/ scripts/tests/ -v --timeout=60
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build base image (ROS2 + Gazebo + tools)
+        uses: docker/build-push-action@v6
+        with:
+          file: docker/Dockerfile.base
+          tags: realgazebo:ci-base
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          push: false
+
+      - name: Verify base image
+        run: |
+          docker run --rm realgazebo:ci-base bash -c "
+            source /opt/ros/jazzy/setup.bash &&
+            ros2 pkg list | grep -c px4_msgs
+          "

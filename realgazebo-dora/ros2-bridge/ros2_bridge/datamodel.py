@@ -5,8 +5,8 @@ Uses strict mode for type enforcement and frozen=True to prevent
 accidental mutation.
 """
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class VehiclePose(BaseModel):

@@ -4,16 +4,18 @@ Tests import logic, property maps, constants, and the _read_state
 function which can be tested in isolation.
 """
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import constants and helpers without ROS2
 from jsbsim_bridge.constants import (
-    JSBSIM_PROPERTIES, FPS_TO_MPS, DEFAULT_AIRCRAFT,
+    DEFAULT_AIRCRAFT,
     DEFAULT_UPDATE_RATE_HZ,
+    FPS_TO_MPS,
+    JSBSIM_PROPERTIES,
 )
 
 

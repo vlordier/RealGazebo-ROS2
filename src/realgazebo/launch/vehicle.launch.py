@@ -10,32 +10,29 @@ This launch file starts a single vehicle instance with:
 """
 
 import os
-import yaml
 import xml.etree.ElementTree as ET
+
+import yaml
 
 # ── Timing Constants ────────────────────────────────────────────────────────
 # These delays ensure gz-transport discovery completes before PX4 subscribes
 VEHICLE_SPAWN_DELAY_S = 10.0
 VEHICLE_ACTION_INTERVAL_S = 5.0
 
-from jinja2 import Environment, FileSystemLoader
-
-from ament_index_python.packages import get_package_share_directory, get_package_prefix
-
 import launch
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from jinja2 import Environment, FileSystemLoader
 from launch import LaunchDescription
-from launch.substitutions import PathJoinSubstitution, FindExecutable
-from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration
-from launch.actions import ExecuteProcess
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import (
     DeclareLaunchArgument,
-    OpaqueFunction,
+    ExecuteProcess,
     IncludeLaunchDescription,
+    OpaqueFunction,
     SetEnvironmentVariable,
 )
-
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import FindExecutable, LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 
 SENSOR_BRIDGE_TYPES = {
     'gpu_lidar': [
@@ -295,7 +292,7 @@ def launch_setup(context, *args, **kwargs):
 
     elif firmware == "ardupilot":
         ap_home = f"{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}"
-        ap_binary = f"/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter"
+        ap_binary = "/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter"
 
         ardupilot_process = ExecuteProcess(
             cmd=[
@@ -305,7 +302,7 @@ def launch_setup(context, *args, **kwargs):
                 '--home', ap_home,
                 '--speedup', '1',
                 '--instance', str(instance_id),
-                f'--uartC', 'tcp:0',
+                '--uartC', 'tcp:0',
             ],
             output='screen',
         )

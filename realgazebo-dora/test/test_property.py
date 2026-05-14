@@ -4,15 +4,21 @@ Uses hypothesis to generate random valid/invalid inputs and verify
 that validation constraints are correctly enforced.
 """
 
-import unittest
-from hypothesis import given, strategies as st
-import sys
 import os
+import sys
+import unittest
+
+from hypothesis import given
+from hypothesis import strategies as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ros2-bridge'))
 
 from ros2_bridge.datamodel import (
-    VehiclePose, SimulationClock, VehicleStatus, V2VQuality, VehicleConfig,
+    SimulationClock,
+    V2VQuality,
+    VehicleConfig,
+    VehiclePose,
+    VehicleStatus,
 )
 
 # ── Reusable strategies ──────────────────────────────────────────────────────

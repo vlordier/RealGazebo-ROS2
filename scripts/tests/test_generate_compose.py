@@ -1,9 +1,10 @@
 """Tests for generate_compose.py config loading and YAML validation."""
 
-import unittest
-import sys
 import os
+import sys
 import tempfile
+import unittest
+
 import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))

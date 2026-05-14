@@ -27,7 +27,7 @@ except ImportError:
     logger.error("dora module not found")
     sys.exit(1)
 
-from ros2_bridge.datamodel import VehiclePose, SimulationClock
+from ros2_bridge.datamodel import SimulationClock, VehiclePose
 
 
 class ROS2BridgeNode(RclpyNode if HAS_ROS2 else object):

@@ -1,17 +1,18 @@
-import time
+from enum import Enum
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
-
-from px4_msgs.msg import LogMessage, VehicleStatus, OffboardControlMode, TrajectorySetpoint, VehicleCommandAck, \
-    VehicleCommand, VehicleLocalPosition, VehicleGlobalPosition
-
 from std_msgs.msg import String
 
-from enum import Enum
-
-import math
+from px4_msgs.msg import (
+    OffboardControlMode,
+    TrajectorySetpoint,
+    VehicleCommand,
+    VehicleGlobalPosition,
+    VehicleLocalPosition,
+    VehicleStatus,
+)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ class PX4ROS2(Node):
         offboard_cmd.param2 = PX4_CUSTOM_MAIN_MODE_OFFBOARD
         offboard_cmd.from_external = True
         self.vehicle_command_publisher_.publish(offboard_cmd)
-        self.get_logger().info(f"[px4] OFFBOARD mode")
+        self.get_logger().info("[px4] OFFBOARD mode")
 
     def control_setpoint(self, x, y, z, heading=None):
         setpoint_cmd = TrajectorySetpoint()

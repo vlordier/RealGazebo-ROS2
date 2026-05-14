@@ -1,13 +1,17 @@
 """Tests for Pydantic v2 data models with field validation."""
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'ros2-bridge'))
 
 from ros2_bridge.datamodel import (
-    VehiclePose, SimulationClock, VehicleStatus, V2VQuality, VehicleConfig,
+    SimulationClock,
+    V2VQuality,
+    VehicleConfig,
+    VehiclePose,
+    VehicleStatus,
 )
 
 

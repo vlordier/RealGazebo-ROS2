@@ -9,13 +9,11 @@ Usage:
         instance_id:=0 fcu_url:=udp://127.0.0.1:14550@14555
 """
 
+
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch.actions import OpaqueFunction
-from ament_index_python.packages import get_package_share_directory
-import os
 
 
 def launch_setup(context, *args, **kwargs):

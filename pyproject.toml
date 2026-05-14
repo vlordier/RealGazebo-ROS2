@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realgazebo"
+description = "Multi-vehicle simulation framework integrating Gazebo, PX4, ArduPilot, JSBSim, UE5, and dora-rs"
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific
+]
+ignore = [
+    "D100",  # Missing docstring in public module (too noisy)
+    "D104",  # Missing docstring in public package
+    "D107",  # Missing docstring in __init__
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["rclpy.*", "px4_msgs.*", "std_msgs.*", "geometry_msgs.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = [
+    "src/manager/test",
+    "src/drone_controller/test",
+    "src/image_viewer/test",
+    "src/jsbsim_bridge/test",
+    "realgazebo-dora/test",
+    "scripts/tests",
+]
+python_files = ["test_*.py"]
+filterwarnings = ["ignore::DeprecationWarning"]

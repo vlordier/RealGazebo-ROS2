@@ -12,18 +12,22 @@ Usage:
     ros2 launch jsbsim_bridge jsbsim.launch.py instance_id:=0 aircraft:=c172p
 """
 
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
-from geometry_msgs.msg import PoseStamped, TwistStamped
-from std_msgs.msg import Float64MultiArray, Header, String
-from rosgraph_msgs.msg import Clock
 import math
 import threading
 
+import rclpy
+from geometry_msgs.msg import PoseStamped, TwistStamped
+from rclpy.node import Node
+from rosgraph_msgs.msg import Clock
+from std_msgs.msg import Float64MultiArray, Header, String
+
 from jsbsim_bridge.constants import (
-    DEFAULT_AIRCRAFT, DEFAULT_UPDATE_RATE_HZ, DEFAULT_FRAME_ID,
-    JSBSIM_PROPERTIES, CONTROL_PROPERTIES, FPS_TO_MPS,
+    CONTROL_PROPERTIES,
+    DEFAULT_AIRCRAFT,
+    DEFAULT_FRAME_ID,
+    DEFAULT_UPDATE_RATE_HZ,
+    FPS_TO_MPS,
+    JSBSIM_PROPERTIES,
 )
 
 

@@ -1,11 +1,10 @@
 """Edge-case tests for drone_controller."""
 
-import unittest
-from unittest.mock import MagicMock, patch, PropertyMock
-import types
-import sys
 import os
-import math
+import sys
+import types
+import unittest
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -124,10 +123,14 @@ for name, cls in [
 mock_std_msgs.msg.String = MagicMock
 
 from drone_controller.drone_controller import (
-    DroneController, NavState, MissionTick,
-    TAKEOFF_ALTITUDE_M, MOVE_DISTANCE_NORTH_M,
-    POSITION_REACHED_THRESHOLD_M, CONTROL_LOOP_PERIOD_S,
+    CONTROL_LOOP_PERIOD_S,
+    MOVE_DISTANCE_NORTH_M,
+    POSITION_REACHED_THRESHOLD_M,
     PX4_CUSTOM_MAIN_MODE_OFFBOARD,
+    TAKEOFF_ALTITUDE_M,
+    DroneController,
+    MissionTick,
+    NavState,
 )
 
 
