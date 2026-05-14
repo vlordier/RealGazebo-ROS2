@@ -1,6 +1,0 @@
-image_viewer.encoding
-=====================
-
-.. automodule:: image_viewer.encoding
-   :members:
-   :undoc-members:

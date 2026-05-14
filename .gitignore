@@ -21,3 +21,5 @@ docs/
 *.egg-info/
 .ruff_cache/
 .mypy_cache/
+site/
+docs/api/_build/
