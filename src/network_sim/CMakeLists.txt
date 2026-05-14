@@ -53,4 +53,19 @@ install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
 )
 
+# Tests
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_communication_model test/test_communication_model.cpp
+    src/log_distance_model.cpp
+    src/congestion_aware_model.cpp
+  )
+  target_include_directories(test_communication_model PRIVATE include)
+  ament_target_dependencies(test_communication_model rclcpp)
+
+  # Ensure tests don't need Gazebo transport
+  target_compile_definitions(test_communication_model PRIVATE TESTING=1)
+endif()
+
 ament_package()
