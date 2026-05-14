@@ -46,7 +46,8 @@ build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
 	docker build -f docker/Dockerfile -t realgazebo:full .
 
 up-dev:                ## Start with hot-reload mounts (Python edits take effect instantly)
-	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>/dev/null
+	@echo "=== Generating compose override ==="
+	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 lint:                  ## Run ruff linter + format check

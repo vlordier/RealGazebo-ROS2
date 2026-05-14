@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """
-Generate docker-compose.override.yml from existing RealGazebo YAML configuration.
+Generate docker-compose.override.yml from RealGazebo YAML configuration.
 
-########################################################################################
-#  USE THE QUICKSTART SCRIPT INSTEAD:                                                 #
-#                                                                                      #
-#    bash scripts/quickstart.sh                                                        #
-#                                                                                      #
-########################################################################################
-
-This script generates docker-compose.override.yml with vehicle services and networks.
-It is called by quickstart.sh or can be used directly.
+Called by quickstart.sh or used directly:
+    python3 scripts/generate_compose.py src/realgazebo/yaml/example.yaml
 """
 
 import argparse
@@ -23,61 +16,37 @@ import yaml
 from pydantic import BaseModel, Field
 
 
+# Obstacle types are spawned by the Gazebo container, not as separate vehicles
+SUPPORT_OBSTACLE = ['rock']
+
+
 class VehicleEntry(BaseModel):
-    """Validated vehicle entry from YAML configuration.
-    Fails fast on invalid config — better than cryptic Docker errors later.
-    """
+    """Validated vehicle entry from YAML configuration."""
     type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
     firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot|jsbsim)$")
     build_target: int = Field(default=0, ge=0)
+    spawnpoint: str = Field(default="(0,0,0,0)", pattern=r"^\(.*\)$")
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Generate docker-compose.override.yml from vehicle configuration'
     )
-    parser.add_argument(
-        'config_file',
-        help='Path to vehicle YAML configuration file (same format as vehicle.launch.py)'
-    )
-    parser.add_argument(
-        'output_file',
-        nargs='?',
-        default=None,
-        help='Output path for docker-compose.override.yml (default: project root)'
-    )
-    parser.add_argument(
-        '--unreal-ip',
-        default='host.docker.internal',
-        help='Unreal Engine server IP (default: host.docker.internal)'
-    )
-    parser.add_argument(
-        '--unreal-port',
-        default='5005',
-        help='Unreal Engine server port (default: 5005)'
-    )
-    parser.add_argument(
-        '--image',
-        default='realgazebo:base',
-        help='Docker image tag (default: realgazebo:base)'
-    )
-    parser.add_argument(
-        '--world',
-        default='c-track',
-        choices=['c-track', 'urban', 'vils'],
-        help='World type (default: c-track)'
-    )
-    parser.add_argument(
-        '--headless',
-        action='store_true',
-        default=True,
-        help='Run in headless mode (default: true)'
-    )
-    parser.add_argument(
-        '--gui',
-        action='store_true',
-        help='Run with Gazebo GUI (disables headless)'
-    )
+    parser.add_argument('config_file', help='Path to vehicle YAML configuration file')
+    parser.add_argument('output_file', nargs='?', default=None,
+                        help='Output path for docker-compose.override.yml (default: project root)')
+    parser.add_argument('--unreal-ip', default='host.docker.internal',
+                        help='Unreal Engine server IP (default: host.docker.internal)')
+    parser.add_argument('--unreal-port', default='5005',
+                        help='Unreal Engine server port (default: 5005)')
+    parser.add_argument('--image', default='realgazebo:base',
+                        help='Docker image tag (default: realgazebo:base)')
+    parser.add_argument('--world', default='c-track', choices=['c-track', 'urban', 'vils'],
+                        help='World type (default: c-track)')
+    parser.add_argument('--headless', action='store_true', default=True,
+                        help='Run in headless mode (default: true)')
+    parser.add_argument('--gui', action='store_true',
+                        help='Run with Gazebo GUI (disables headless)')
     return parser.parse_args()
 
 
@@ -85,16 +54,12 @@ def load_config(config_path):
     """Load and validate vehicle configuration from YAML file."""
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
-
     if config is None:
         raise ValueError(f"Empty or invalid YAML file: {config_path}")
 
-    # Accept both build_targets (new) and px4_target (deprecated)
     if 'px4_target' in config and 'build_targets' not in config:
-        warnings.warn(
-            "YAML key 'px4_target' is deprecated, use 'build_targets' instead",
-            DeprecationWarning, stacklevel=2
-        )
+        warnings.warn("YAML key 'px4_target' is deprecated, use 'build_targets' instead",
+                      DeprecationWarning, stacklevel=2)
         config['build_targets'] = config.pop('px4_target')
 
     vehicles = config.get('vehicles', {})
@@ -103,15 +68,13 @@ def load_config(config_path):
             raise ValueError(f"Vehicle {vid}: expected a mapping, got {type(v).__name__}")
         if 'type' not in v:
             raise ValueError(f"Vehicle {vid}: missing required field 'type'")
-        VehicleEntry(**v)  # validates; raises on bad config
-
+        VehicleEntry(**v)
     return config
 
 
 def parse_spawnpoint(spawnpoint_str):
     """Parse spawnpoint from string tuple format: (x, y, z, yaw)"""
     try:
-        # Handle string tuple format like "(18.846, 14.751, -1.3, -3.14)"
         if isinstance(spawnpoint_str, str):
             parsed = ast.literal_eval(spawnpoint_str)
             return list(parsed)
@@ -122,67 +85,43 @@ def parse_spawnpoint(spawnpoint_str):
     raise ValueError(f"Invalid spawnpoint format: {spawnpoint_str}")
 
 
+def _is_vehicle(vtype):
+    """Check if a vehicle type is a real vehicle (not an obstacle)."""
+    return vtype not in SUPPORT_OBSTACLE
+
+
 def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_port='5005',
                               world='c-track', headless=True, image='realgazebo:base'):
-    """Generate docker-compose.override.yml content from existing YAML format"""
+    """Generate docker-compose.override.yml content from YAML config.
 
-    compose = {
-        'services': {}
-    }
-
-    # Parse existing format:
-    # build_targets:
-    #   0: /path/to/PX4
-    # vehicles:
-    #   0:
-    #     type: x500
-    #     build_target: 0
-    #     spawnpoint: (x, y, z, yaw)
-
-    # Resolve build_targets map: target_id -> filesystem path
+    Returns dict with keys: 'services' (vehicle services), '_summary' (vehicle list for printing).
+    """
+    compose = {'services': {}}
     build_targets = config.get('build_targets', {}) or {}
     vehicles = config.get('vehicles', {})
 
-    # Obstacles are not included in vehicle containers (they spawn in gazebo)
-    support_obstacle = ['rock']
-
-    # Build vehicle model names list for network_sim (e.g., "x500_0,lc_62_1,boat_8")
+    # Single-pass: build vehicle_models and generate services simultaneously
     vehicle_models = []
-    for v_id, v_info in vehicles.items():
-        v_t = v_info.get('type')
-        if v_t not in support_obstacle:
-            vehicle_models.append(f'{v_t}_{int(v_id)}')
-    vehicle_models_str = ','.join(vehicle_models)
+    summary = []
 
     for vid, vehicle in vehicles.items():
         vid = int(vid)
         vtype = vehicle.get('type')
 
-        # Skip obstacles - they're handled by gazebo container
-        if vtype in support_obstacle:
+        if not _is_vehicle(vtype):
             print(f"  [SKIP] vehicle_{vid}: type '{vtype}' is an obstacle, handled by Gazebo container")
             continue
 
-        vehicle.get('build_target')
-        spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
+        vehicle_models.append(f'{vtype}_{vid}')
 
-        service_name = f'vehicle_{vid}'
-
-        # Format spawnpoint as comma-separated string
-        spawnpoint_str = ','.join(map(str, spawnpoint))
-
-        # Vehicle IPs on each network
-        # Gazebo network: 172.20.0.{10+vid} (max ~245 vehicles per /24)
-        # Vehicle network: 172.30.0.{10+vid} (same limit)
-        vehicle_gazebo_ip = f'172.20.0.{10 + vid}'
-        vehicle_network_ip = f'172.30.0.{10 + vid}'
-
-        # Create vehicle service
         v_firmware = vehicle.get('firmware', 'px4')
-
-        # Resolve build_target to filesystem path
         v_build_target = vehicle.get('build_target', 0)
         px4_path = build_targets.get(v_build_target, '/home/user/realgazebo/RealGazebo-PX4')
+        spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
+        spawnpoint_str = ','.join(map(str, spawnpoint))
+
+        vehicle_gazebo_ip = f'172.20.0.{10 + vid}'
+        vehicle_network_ip = f'172.30.0.{10 + vid}'
 
         env_vars = [
             'DISPLAY=${DISPLAY:-:0}',
@@ -196,102 +135,88 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
             env_vars.append('PX4_GZ_STANDALONE=1')
             env_vars.append(f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{vid}.xml')
 
+        vehicle_models_str = ''  # placeholder, filled after the loop
+        service_name = f'vehicle_{vid}'
         compose['services'][service_name] = {
             'image': image,
             'container_name': service_name,
             'hostname': service_name,
-            'privileged': True,  # Required for TC qdisc/netem in V2V simulation.
-                                 # For deployments without V2V, replace with:
-                                 #   cap_add: [NET_ADMIN, SYS_ADMIN]
+            'privileged': True,
             'environment': env_vars,
-            'volumes': [
-                '/tmp/.X11-unix:/tmp/.X11-unix',
-            ],
+            'volumes': ['/tmp/.X11-unix:/tmp/.X11-unix'],
             'networks': {
-                'gazebo-network': {
-                    'ipv4_address': vehicle_gazebo_ip
-                },
-                'vehicle-network': {
-                    'ipv4_address': vehicle_network_ip
-                }
+                'gazebo-network': {'ipv4_address': vehicle_gazebo_ip},
+                'vehicle-network': {'ipv4_address': vehicle_network_ip},
             },
-            'extra_hosts': [
-                'host.docker.internal:host-gateway'
-            ],
-            'ports': [
-                f'{18570 + vid}:{18570 + vid}/udp'  # GCS MAVLink link for QGC
-            ],
-            'depends_on': {
-                'gazebo': {
-                    'condition': 'service_healthy'
-                }
-            },
+            'extra_hosts': ['host.docker.internal:host-gateway'],
+            'ports': [f'{18570 + vid}:{18570 + vid}/udp'],
+            'depends_on': {'gazebo': {'condition': 'service_healthy'}},
             'healthcheck': {
-                'test': [
-                    'CMD-SHELL',
-                    f'source /opt/ros/jazzy/setup.bash && timeout 5 ros2 topic list 2>/dev/null | grep -q /world/{world}/clock || exit 1'
-                ],
-                'interval': '15s',
-                'timeout': '10s',
-                'retries': 10,
-                'start_period': '120s',
+                'test': ['CMD-SHELL',
+                         f'source /opt/ros/jazzy/setup.bash && timeout 5 ros2 topic list 2>/dev/null | grep -q /world/{world}/clock || exit 1'],
+                'interval': '15s', 'timeout': '10s', 'retries': 10, 'start_period': '120s',
             },
             'restart': 'unless-stopped',
             'stop_grace_period': '30s',
-            'command': f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; sleep $(({vid} * 5)); source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
-            'deploy': {
-                'resources': {
-                    'limits': {
-                        'memory': '4G'
-                    }
-                }
-            }
+            'deploy': {'resources': {'limits': {'memory': '4G'}}},
         }
+        summary.append({'id': vid, 'type': vtype, 'spawnpoint': spawnpoint})
+
+    # Second pass: inject vehicle_models_str into every service command
+    vehicle_models_str = ','.join(vehicle_models)
+    for vid, vehicle in vehicles.items():
+        vid = int(vid)
+        vtype = vehicle.get('type')
+        if not _is_vehicle(vtype):
+            continue
+        service_name = f'vehicle_{vid}'
+        v_firmware = vehicle.get('firmware', 'px4')
+        v_build_target = vehicle.get('build_target', 0)
+        px4_path = build_targets.get(v_build_target, '/home/user/realgazebo/RealGazebo-PX4')
+        spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
+        spawnpoint_str = ','.join(map(str, spawnpoint))
+        compose['services'][service_name]['command'] = (
+            f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; '
+            f'sleep $(({vid} * 5)); '
+            f'source /opt/ros/jazzy/setup.bash && '
+            f'source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && '
+            f'ros2 launch realgazebo vehicle.launch.py '
+            f'instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} '
+            f'spawnpoint:={spawnpoint_str} px4_path:={px4_path} '
+            f'unreal_ip:={unreal_ip} unreal_port:={unreal_port} '
+            f'vehicle_models:={vehicle_models_str}"'
+        )
 
     return compose
 
 
 def main():
     args = parse_args()
-
     headless = not args.gui if args.gui else args.headless
 
-    # Determine output path
     if args.output_file:
         output_path = args.output_file
     else:
-        # Default: same directory as this script's parent (project root)
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(script_dir)
         output_path = os.path.join(project_root, 'docker-compose.override.yml')
 
-    # Load configuration
     config = load_config(args.config_file)
-
-    # Generate compose override
     compose = generate_compose_override(
-        config,
-        unreal_ip=args.unreal_ip,
-        unreal_port=args.unreal_port,
-        world=args.world,
-        headless=headless,
-        image=args.image,
+        config, unreal_ip=args.unreal_ip, unreal_port=args.unreal_port,
+        world=args.world, headless=headless, image=args.image,
     )
 
-    # Write output
     with open(output_path, 'w') as f:
         yaml.dump(compose, f, default_flow_style=False, sort_keys=False)
 
-    # Print summary
     vehicles = config.get('vehicles', {})
-    support_obstacle = ['rock']
-    vehicle_count = sum(1 for v in vehicles.values() if v.get('type') not in support_obstacle)
-
+    vehicle_count = sum(1 for v in vehicles.values() if _is_vehicle(v.get('type')))
     print(f"Generated {output_path}")
     print(f"  - {vehicle_count} vehicle(s) configured:")
     for vid, v in sorted(vehicles.items()):
-        if v.get('type') not in support_obstacle:
-            print(f"    - vehicle_{vid}: {v['type']} at {v['spawnpoint']}")
+        if _is_vehicle(v.get('type')):
+            print(f"    - vehicle_{vid}: {v['type']} at {v.get('spawnpoint', '(0,0,0,0)')}")
     print("\nTo start the simulation:")
     print(f"  cd {os.path.dirname(output_path)}")
     print("  docker compose up -d")
