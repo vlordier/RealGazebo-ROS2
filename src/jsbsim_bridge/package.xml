@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>jsbsim_bridge</name>
+  <version>0.1.0</version>
+  <description>JSBSim Flight Dynamics Model bridge for RealGazebo</description>
+  <maintainer email="kmk6061602@naver.com">kmk</maintainer>
+  <license>GPL-3.0-only</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>px4_msgs</depend>
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -262,3 +262,6 @@ COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["/bin/bash"]
+
+# Install JSBSim for flight dynamics simulation
+RUN pip3 install --break-system-packages jsbsim 2>/dev/null || pip install jsbsim 2>/dev/null || true
