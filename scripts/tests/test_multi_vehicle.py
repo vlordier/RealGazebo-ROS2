@@ -279,6 +279,31 @@ class TestMultiVehicleCompose(unittest.TestCase):
         # Default in example.yaml is /home/user/realgazebo/RealGazebo-PX4
         self.assertEqual(m.group(1), '/home/user/realgazebo/RealGazebo-PX4')
 
+    def test_pipeline_end_to_end(self):
+        """End-to-end pipeline: YAML → compose → override file is valid YAML."""
+        import tempfile
+        import yaml
+        from generate_compose import generate_compose_override
+        output_path = os.path.join(tempfile.mkdtemp(), 'override.yml')
+        with open(output_path, 'w') as f:
+            yaml.dump(
+                generate_compose_override(self.config),
+                f, default_flow_style=False, sort_keys=False
+            )
+        # Read back and validate structure
+        with open(output_path) as f:
+            parsed = yaml.safe_load(f)
+        self.assertIn('services', parsed)
+        self.assertIn('vehicle_0', parsed['services'])
+        self.assertIn('networks', parsed['services']['vehicle_0'])
+        self.assertIn('gazebo-network', parsed['services']['vehicle_0']['networks'])
+        self.assertIn('vehicle-network', parsed['services']['vehicle_0']['networks'])
+        self.assertIn('healthcheck', parsed['services']['vehicle_0'])
+        self.assertIn('restart', parsed['services']['vehicle_0'])
+        self.assertIn('stop_grace_period', parsed['services']['vehicle_0'])
+        self.assertEqual(parsed['services']['vehicle_0']['restart'], 'unless-stopped')
+        self.assertEqual(parsed['services']['vehicle_0']['stop_grace_period'], '30s')
+
 
 class TestSdfTemplateValidation(unittest.TestCase):
     """Validate that all SDF Jinja templates render to well-formed XML."""
@@ -381,6 +406,38 @@ class TestSdfTemplateValidation(unittest.TestCase):
     def test_x500_jsbsim_renders_valid_xml(self):
         """x500 with jsbsim firmware renders valid XML (px4 fallthrough)."""
         self._render_and_validate('x500.sdf.jinja', firmware='jsbsim')
+
+    def test_joint_names_match_px4_x500_base(self):
+        """Rendered x500 PX4 template contains joint names expected by PX4's x500_base."""
+        output = self._render_and_validate(
+            'x500.sdf.jinja', firmware='px4',
+            expect_plugin='gz-sim-multicopter-motor-model-system'
+        )
+        # These joint names must match PX4-Autopilot/Tools/simulation/gz/models/x500_base
+        expected_joints = ['rotor_0_joint', 'rotor_1_joint', 'rotor_2_joint', 'rotor_3_joint']
+        for joint in expected_joints:
+            self.assertIn(
+                f'<jointName>{joint}</jointName>', output,
+                f'Missing expected PX4 joint: {joint}'
+            )
+
+    def test_joint_names_match_px4_rover(self):
+        """Rendered rover PX4 template contains joint names expected by PX4."""
+        output = self._render_and_validate(
+            'rover_ackermann.sdf.jinja', firmware='px4',
+            expect_plugin='gz-sim-joint-controller-system'
+        )
+        expected_joints = [
+            'rover_ackermann/FrontLeftWheelJoint',
+            'rover_ackermann/FrontRightWheelJoint',
+            'rover_ackermann/RearRightWheelJoint',
+            'rover_ackermann/RearLeftWheelJoint',
+        ]
+        for joint in expected_joints:
+            self.assertIn(
+                f'<joint_name>{joint}</joint_name>', output,
+                f'Missing expected PX4 joint: {joint}'
+            )
 
 
 class TestMultiVehicleIntegration(unittest.TestCase):

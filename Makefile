@@ -42,6 +42,7 @@ logs:                  ## Follow container logs
 .PHONY: build-full up-dev lint typecheck docs benchmark
 
 build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
+	@echo "  NOTE: CI builds Dockerfile.base only. Use this target locally to verify PX4/ArduPilot integration."
 	docker build -f docker/Dockerfile -t realgazebo:full .
 
 up-dev:                ## Start with hot-reload mounts (Python edits take effect instantly)

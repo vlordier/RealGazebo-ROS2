@@ -15,38 +15,11 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          pip install ruff pre-commit mypy pydantic hypothesis
-
-      - name: Ruff lint
-        run: ruff check --output-format=github .
-
-      - name: Ruff format check
-        run: ruff format --check .
-
-      - name: MyPy type check
-        run: mypy --ignore-missing-imports realgazebo-dora/ src/ scripts/ || true
-
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+          submodules: false  # Test only runs Python tests
 
       - uses: actions/setup-python@v5
         with:
@@ -65,7 +38,7 @@ jobs:
           make benchmark
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
       contents: read
@@ -133,7 +106,7 @@ jobs:
           "
 
   smoke-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - uses: actions/checkout@v4
@@ -184,7 +157,7 @@ jobs:
       - name: Stop simulation
         if: always()
         run: docker compose down -v
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:

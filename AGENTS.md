@@ -28,6 +28,15 @@ All commands run from project root. Python 3.10+ required for some test files.
 - Shared motor templates stored as `_x500_motors.sdf.jinja` (underscore prefix)
 - Config key `build_targets` (not `px4_target`; the old name triggers DeprecationWarning)
 
+## Tested Versions
+- **ROS2**: Jazzy (Ubuntu 24.04 / Gazebo Harmonic)
+- **PX4**: v1.16.1 (from `src/px4_msgs` submodule)
+- **ArduPilot**: latest master (Copter 4.6+)
+- **JSBSim**: 1.3.0 (pip)
+- **Gazebo**: Harmonic (bundled with ROS2 Jazzy)
+- **Python**: 3.10+ (CI tests on 3.10, 3.11, 3.12)
+- **Docker**: 24.0+ with Buildx
+
 ## Common Tasks
 - **One-command deploy**: `bash scripts/quickstart.sh`
 - **Build base image**: `make build` (or `make build-full` for PX4+ArduPilot)

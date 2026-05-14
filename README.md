@@ -72,6 +72,17 @@ vehicles:
 | `ardupilot_bridge` | Python | ArduPilot MAVROS ROS2 bridge |
 | `dora-rs` dataflow | Python | Pydantic-validated data pipeline |
 
+## Requirements
+
+- **ROS2 Jazzy** + **Gazebo Harmonic** (tested on Ubuntu 24.04)
+- Python 3.10+ (3.12 recommended)
+- Docker with Buildx (for containerized simulation)
+- **macOS users**: Gazebo GUI requires XQuartz for X11 forwarding.
+  Install with `brew install --cask xquartz`, then run:
+  ```bash
+  HEADLESS=false xhost +localhost make up
+  ```
+
 ## Developer
 
 ```bash
