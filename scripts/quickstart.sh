@@ -1,6 +1,7 @@
 #!/bin/bash
 # RealGazebo Quickstart — one-command setup and run
-# Usage: bash scripts/quickstart.sh
+# Usage: bash scripts/quickstart.sh [config_file]
+#   config_file: Path to vehicle YAML (default: src/realgazebo/yaml/one_drone.yaml)
 # What it does:
 #   1. Checks prerequisites (Docker, git, Python)
 #   2. Initializes submodules
@@ -10,6 +11,8 @@
 #   6. Shows next steps
 
 set -euo pipefail
+
+CONFIG_FILE="${1:-src/realgazebo/yaml/one_drone.yaml}"
 
 CLEANUP() {
     docker compose down 2>/dev/null || true
@@ -67,8 +70,8 @@ else
 fi
 
 # ── Step 4: Start simulation ─────────────────────────────────────────────
-info "Starting simulation with one drone..."
-python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>/dev/null || true
+info "Starting simulation with config: $CONFIG_FILE ..."
+python3 scripts/generate_compose.py "$CONFIG_FILE" 2>/dev/null || true
 docker compose down 2>/dev/null || true
 docker compose up -d 2>&1 | tail -3
 info "Containers started. Waiting for Gazebo..."

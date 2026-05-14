@@ -1,9 +1,9 @@
 # ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
-.PHONY: setup build up down test smoke-test logs help
+.PHONY: setup build up down test test-one smoke-test logs help
 
 setup:                 ## One-command: install deps + init submodules + pre-commit
 	git submodule update --init --recursive --depth 1 2>/dev/null || git submodule update --init --recursive
-	pip3 install -r requirements.txt -q 2>/dev/null; pip install -r requirements.txt -q 2>/dev/null; true
+	pip3 install -r requirements.lock -q 2>/dev/null; pip install -r requirements.lock -q 2>/dev/null; pip3 install -r requirements.txt -q 2>/dev/null; pip install -r requirements.txt -q 2>/dev/null; true
 	pre-commit install 2>/dev/null || true
 	@echo "Setup complete. Run 'make build' to build Docker image."
 
@@ -28,6 +28,9 @@ test:                  ## Run all Python tests (works without Docker)
 	@python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" && \
 	 python3 -m pytest scripts/tests/ realgazebo-dora/test/ src/jsbsim_bridge/test/ -v --timeout=60 -m "not integration" 2>&1 | tail -3 || \
 	 python3 -m pytest scripts/tests/ -v --timeout=60 -m "not integration" 2>&1 | tail -3
+
+test-one:              ## Run a single test: make test-one TEST=tests/test_name.py::TestClass::test_method
+	@python3 -m pytest -v --timeout=60 -m "not integration" $(TEST)
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
 	@echo "=== Smoke test ==="

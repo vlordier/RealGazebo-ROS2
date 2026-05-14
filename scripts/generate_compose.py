@@ -11,6 +11,7 @@ import ast
 import os
 import sys
 import warnings
+from typing import Any, Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -27,7 +28,7 @@ class VehicleEntry(BaseModel):
     spawnpoint: str = Field(default="(0,0,0,0)", pattern=r"^\(.*\)$")
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Generate docker-compose.override.yml from vehicle configuration'
     )
@@ -52,7 +53,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_config(config_path):
+def load_config(config_path: str) -> dict:
     """Load and validate vehicle configuration from YAML file."""
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -74,7 +75,7 @@ def load_config(config_path):
     return config
 
 
-def parse_spawnpoint(spawnpoint_str):
+def parse_spawnpoint(spawnpoint_str: Any) -> List[float]:
     """Parse spawnpoint from string tuple format: (x, y, z, yaw)"""
     try:
         if isinstance(spawnpoint_str, str):
@@ -87,13 +88,19 @@ def parse_spawnpoint(spawnpoint_str):
     raise ValueError(f"Invalid spawnpoint format: {spawnpoint_str}")
 
 
-def _is_vehicle(vtype):
+def _is_vehicle(vtype: Any) -> bool:
     """Check if a vehicle type is a real vehicle (not an obstacle)."""
     return vtype not in SUPPORT_OBSTACLE
 
 
-def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_port='5005',
-                              world='c-track', headless=True, image='realgazebo:base'):
+def generate_compose_override(
+    config: dict,
+    unreal_ip: str = 'host.docker.internal',
+    unreal_port: str = '5005',
+    world: str = 'c-track',
+    headless: bool = True,
+    image: str = 'realgazebo:base',
+) -> dict:
     """Generate docker-compose.override.yml content from YAML config.
 
     Two lightweight passes: first collects metadata and builds the model list,
@@ -180,7 +187,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     return compose
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     # --validate: dry-run, just validate the config
