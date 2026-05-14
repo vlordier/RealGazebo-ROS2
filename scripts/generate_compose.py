@@ -98,7 +98,7 @@ def parse_spawnpoint(spawnpoint_str):
             return list(parsed)
         elif isinstance(spawnpoint_str, (list, tuple)):
             return list(spawnpoint_str)
-    except:
+    except (ValueError, SyntaxError, TypeError, MemoryError):
         pass
     raise ValueError(f"Invalid spawnpoint format: {spawnpoint_str}")
 

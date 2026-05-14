@@ -154,12 +154,13 @@ python3 "${SCRIPT_DIR}/generate_compose.py" "$CONFIG_FILE" \
     --world "$WORLD_TYPE"
 
 # Set environment variables
-export LOCAL_USER_ID=$(id -u)
+LOCAL_USER_ID=$(id -u)
+export LOCAL_USER_ID
 export DISPLAY=${DISPLAY:-:0}
-export HEADLESS=$HEADLESS
-export VERBOSE=$VERBOSE
-export UNREAL_IP=$UNREAL_IP
-export UNREAL_PORT=$UNREAL_PORT
+export HEADLESS
+export VERBOSE
+export UNREAL_IP
+export UNREAL_PORT
 export WORLD=$WORLD_TYPE
 
 # Get Docker host gateway IP for MAVLink GCS connection
@@ -186,8 +187,7 @@ if [[ -z "${PX4_PATH}" ]]; then
     done
 fi
 
-# GPU configuration
-COMPOSE_PROFILES=""
+# GPU configuration — COMPOSE_PROFILES is reserved for future gpu profile
 if [[ "$USE_GPU" == "true" ]] && command -v nvidia-smi &>/dev/null && nvidia-smi &>/dev/null; then
     if docker info 2>/dev/null | grep -q nvidia; then
         echo "NVIDIA GPU detected and enabled"
