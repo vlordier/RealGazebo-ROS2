@@ -1,0 +1,21 @@
+# RealGazebo Multi-Dev-Container Setup
+#
+# Development variant: mounts source code for hot-reload.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Changes to Python nodes (manager, drone_controller, image_viewer, network_sim)
+# take effect immediately without rebuild. C++ changes need a colcon rebuild
+# inside the container: docker exec gazebo bash -c "source /opt/ros/jazzy/setup.bash && cd /home/user/realgazebo && colcon build --packages-select realgazebo --symlink-install"
+
+services:
+  gazebo:
+    volumes:
+      - ./src:/home/user/realgazebo/RealGazebo-ROS2/src:delegated
+    entrypoint: |
+      bash -c "
+        source /opt/ros/jazzy/setup.bash &&
+        source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash 2>/dev/null; 
+        colcon build --symlink-install --packages-skip px4_msgs 2>&1 | tail -5 &&
+        exec ros2 launch realgazebo gazebo.launch.py headless:=true world:=c-track
+      "

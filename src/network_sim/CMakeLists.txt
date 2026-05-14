@@ -43,6 +43,11 @@ install(TARGETS network_sim_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Install Python diagnostics script
+install(PROGRAMS network_sim/v2v_diagnostics.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 # Install headers
 install(DIRECTORY include/
   DESTINATION include
