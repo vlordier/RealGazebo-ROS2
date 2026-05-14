@@ -12,3 +12,5 @@ docker-compose.override.yml
 
 # Auto-generated from Jinja2 templates at launch time
 src/realgazebo/models/c-track/model.sdf
+realgazebo-dora/ros2-bridge/ros2_bridge.egg-info
+realgazebo-dora/vehicle-monitor/vehicle_monitor.egg-info

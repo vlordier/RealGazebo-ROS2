@@ -75,7 +75,37 @@ services:
               count: all
               capabilities: [gpu]
 
-  # Vehicle Template - Extended by generated vehicle services
+  # Dora-rs Dataflow Service (optional, alongside ROS2)
+  dora:
+    image: aware4docker/realgazebo:1.2
+    container_name: dora
+    hostname: dora
+    profiles:
+      - dora  # Only started with: docker compose --profile dora up
+    privileged: true
+    environment:
+      <<: *common-env
+      GZ_IP: 172.20.0.100
+      GZ_PARTITION: realgazebo
+      LOCAL_USER_ID: ${LOCAL_USER_ID:-1000}
+    networks:
+      gazebo-network:
+        ipv4_address: 172.20.0.100
+    depends_on:
+      gazebo:
+        condition: service_healthy
+    command: bash -c "
+      source /opt/ros/jazzy/setup.bash &&
+      source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash &&
+      pip install --break-system-packages dora-runtime dora-ros2-bridge 2>/dev/null &&
+      cd /home/user/realgazebo/RealGazebo-ROS2/realgazebo-dora &&
+      dora up && dora start dataflow.yml --name realgazebo --detach &&
+      sleep infinity
+    "
+    deploy:
+      resources:
+        limits:
+          memory: 2G
   # This service is not started directly, only used as a template
   vehicle_template:
     image: aware4docker/realgazebo:1.2
