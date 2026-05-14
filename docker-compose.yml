@@ -47,12 +47,12 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD-SHELL", "su -s /bin/bash user -c 'source /opt/ros/jazzy/setup.bash && timeout 5 gz topic -e -t /world/c-track/clock -n 1' > /dev/null 2>&1"]
+      test: ["CMD-SHELL", "su -s /bin/bash user -c 'source /opt/ros/jazzy/setup.bash && timeout 5 gz topic -e -t /world/${WORLD:-c-track}/clock -n 1' > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 30
       start_period: 60s
-    command: bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo gazebo.launch.py headless:=${HEADLESS:-true} verbose:=${VERBOSE:-false} world:=${WORLD:-c-track} px4_path:=/home/user/realgazebo/RealGazebo-PX4 unreal_ip:=${UNREAL_IP:-host.docker.internal} unreal_port:=${UNREAL_PORT:-5005}"
+    command: bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && RECORD_FLAG=$${RECORD:+-r /tmp/record}; ros2 launch realgazebo gazebo.launch.py headless:=${HEADLESS:-true} verbose:=${VERBOSE:-false} world:=${WORLD:-c-track} px4_path:=/home/user/realgazebo/RealGazebo-PX4 unreal_ip:=${UNREAL_IP:-host.docker.internal} unreal_port:=${UNREAL_PORT:-5005}"
     deploy:
       resources:
         limits:

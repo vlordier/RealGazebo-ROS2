@@ -229,7 +229,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
             'healthcheck': {
                 'test': [
                     'CMD-SHELL',
-                    f'source /opt/ros/jazzy/setup.bash && timeout 5 ros2 topic list 2>/dev/null | grep -q /clock || exit 1'
+                    f'source /opt/ros/jazzy/setup.bash && timeout 5 ros2 topic list 2>/dev/null | grep -q /world/{world}/clock || exit 1'
                 ],
                 'interval': '15s',
                 'timeout': '10s',
@@ -237,7 +237,8 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                 'start_period': '120s',
             },
             'restart': 'unless-stopped',
-            'command': f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
+            'stop_grace_period': '30s',
+            'command': f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; sleep $(({vid} * 5)); source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
             'deploy': {
                 'resources': {
                     'limits': {

@@ -433,8 +433,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'firmware',
-            default_value='px4',
-            description='Flight controller firmware (px4 or ardupilot)'
+            description='Flight controller firmware (px4, ardupilot, jsbsim) — required'
         )
     )
 

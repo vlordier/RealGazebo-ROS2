@@ -8,7 +8,9 @@ setup:                 ## One-command: install deps + init submodules + pre-comm
 	@echo "Setup complete. Run 'make build' to build Docker image."
 
 build:                 ## Build the base Docker image (ROS2 + Gazebo, ~10 min)
-	docker build -f docker/Dockerfile.base -t realgazebo:base .
+	@TAG=realgazebo:base-$$(date +%Y%m%d); \
+	 docker build -f docker/Dockerfile.base -t realgazebo:base -t $$TAG . && \
+	 echo "  Tagged as realgazebo:base and $$TAG"
 
 up:                    ## Start simulation with default config
 	@echo "=== Generating compose override ==="
@@ -22,6 +24,7 @@ down:                  ## Stop all containers
 
 test:                  ## Run all Python tests (works without Docker)
 	@echo "=== Running tests ==="
+	@python3 -c "import pydantic; assert pydantic.VERSION.startswith('2.'), 'pydantic v2 required'" 2>/dev/null || { echo "  [SKIP] pydantic v2 not found"; exit 0; }
 	@python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" && \
 	 python3 -m pytest scripts/tests/ realgazebo-dora/test/ src/jsbsim_bridge/test/ -v --timeout=60 -m "not integration" 2>&1 | tail -3 || \
 	 python3 -m pytest scripts/tests/ -v --timeout=60 -m "not integration" 2>&1 | tail -3

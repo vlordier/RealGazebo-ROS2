@@ -4,6 +4,9 @@
     </plugin>
 {% else %}
     {# PX4 and JSBSim both use individual motor plugins — JSBSim FDM runs externally #}
+    {# NOTE: These plugins reference model://x500_base from PX4's Gazebo model path.  #}
+    {# If x500_base joint names change in a PX4 update, the <jointName> values below  #}
+    {# must be updated to match. See PX4-Autopilot/Tools/simulation/gz/models/x500_base #}
     <plugin filename="gz-sim-multicopter-motor-model-system"
       name="gz::sim::systems::MulticopterMotorModel">
       <jointName>rotor_0_joint</jointName>
