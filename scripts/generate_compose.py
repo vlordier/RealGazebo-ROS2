@@ -29,7 +29,7 @@ class VehicleEntry(BaseModel):
     Fails fast on invalid config — better than cryptic Docker errors later.
     """
     type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
-    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot)$")
+    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot|jsbsim)$")
     build_target: int = Field(default=0, ge=0)
 
 

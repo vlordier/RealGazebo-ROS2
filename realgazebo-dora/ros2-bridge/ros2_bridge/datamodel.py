@@ -111,7 +111,7 @@ class VehicleConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
-    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot)$")
+    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot|jsbsim)$")
     build_target: int = Field(default=0, ge=0)
     spawnpoint: tuple[float, float, float, float] = Field(
         default=(0.0, 0.0, 0.0, 0.0),

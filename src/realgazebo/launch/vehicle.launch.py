@@ -311,6 +311,24 @@ def launch_setup(context, *args, **kwargs):
         )
         timed_actions.append(ardupilot_process)
 
+    elif firmware == "jsbsim":
+        # JSBSim flight dynamics model — spawn vehicle in Gazebo visually
+        # but get physics from JSBSim instead of Gazebo
+        jsbsim_node = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution([
+                    get_package_share_directory('jsbsim_bridge'),
+                    'launch', 'jsbsim.launch.py'
+                ])
+            ),
+            launch_arguments={
+                'instance_id': str(instance_id),
+                'aircraft': vehicle_type,
+                'gazebo_bridge': 'true',
+            }.items()
+        )
+        timed_actions.append(jsbsim_node)
+
     # 6. ROS2 control nodes (optional, after everything is ready)
     if start_control_node:
         control_node = Node(

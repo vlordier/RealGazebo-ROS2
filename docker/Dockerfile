@@ -232,6 +232,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 USER user
+# Install JSBSim flight dynamics engine (verified — fails build if broken)
+RUN python3 -m pip install --break-system-packages jsbsim \
+    && python3 -c "import jsbsim; f=jsbsim.FGFDMExec(jsbsim.get_default_root_dir(),None); f.load_model('c172p'); print('JSBSim OK, aircraft c172p loaded')"
+
 RUN cd /home/user/realgazebo/RealGazebo-PX4 \
    && make px4_sitl -j$(nproc) \
    && cd /home/user/realgazebo/RealGazebo-ROS2 \

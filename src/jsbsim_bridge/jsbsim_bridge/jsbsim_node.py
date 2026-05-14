@@ -1,202 +1,222 @@
 #!/usr/bin/env python3
 """JSBSim Flight Dynamics Model bridge for RealGazebo.
 
-Loads a JSBSim aircraft model, steps the simulation at a fixed rate,
+Loads a JSBSim aircraft model, steps the simulation locked to Gazebo's /clock,
 and publishes aircraft state as ROS2 topics. Subscribes to actuator
 commands for flight control surface inputs.
 
+Multi-aircraft: each instance uses a unique namespace (/jsbsim_{instance_id}/...).
+Clock sync: listens to /clock and steps JSBSim in sim-time chunks.
+
 Usage:
-    ros2 run jsbsim_bridge jsbsim_node --ros-args \
-        -p aircraft:=x8 -p update_rate:=250
-
-Published topics:
-    /jsbsim/pose              geometry_msgs/PoseStamped
-    /jsbsim/velocity          geometry_msgs/TwistStamped
-    /jsbsim/state             fdm_msgs/FDMState (custom)
-
-Subscribed topics:
-    /jsbsim/controls          std_msgs/Float64MultiArray  [throttle, elevator, aileron, rudder]
+    ros2 launch jsbsim_bridge jsbsim.launch.py instance_id:=0 aircraft:=c172p
 """
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Header
+from rosgraph_msgs.msg import Clock
 import math
-import os
 import threading
 
-# ── Constants ────────────────────────────────────────────────────────────────
-
-DEFAULT_AIRCRAFT = "c172p"
-DEFAULT_UPDATE_RATE_HZ = 250
-DEFAULT_FRAME_ID = "map"
-CONTROLS_TIMEOUT_S = 1.0
-
-# JSBSim internal property paths for control inputs
-JSBSIM_PROPERTIES = {
-    "lat": "position/lat-geod-rad",
-    "lon": "position/long-gc-rad",
-    "alt": "position/h-sl-meters",
-    "phi": "attitude/phi-rad",
-    "theta": "attitude/theta-rad",
-    "psi": "attitude/psi-rad",
-    "v_north": "velocity/v-north-fps",
-    "v_east": "velocity/v-east-fps",
-    "v_down": "velocity/v-down-fps",
-    "pitch_rate": "attitude/pitch-rate-rad_sec",
-    "roll_rate": "attitude/roll-rate-rad_sec",
-    "yaw_rate": "attitude/yaw-rate-rad_sec",
-}
+from jsbsim_bridge.constants import (
+    DEFAULT_AIRCRAFT, DEFAULT_UPDATE_RATE_HZ, DEFAULT_FRAME_ID,
+    JSBSIM_PROPERTIES, CONTROL_PROPERTIES, FPS_TO_MPS,
+)
 
 
 class JSBSimBridge(Node):
-    """Bridges JSBSim FDM to ROS2 topics.
-
-    Architecture:
-        JSBSim FDM ──(sim step)──▶ PoseStamped, TwistStamped
-        ROS2 controls ──────────────▶ fcs/throttle-cmd-norm, etc.
-    """
+    """Bridges JSBSim FDM to ROS2 topics, locked to simulation clock."""
 
     def __init__(self):
-        super().__init__("jsbsim_bridge")
+        instance_id = self._declare_param("instance_id", 0)
+        aircraft = self._declare_param("aircraft", DEFAULT_AIRCRAFT)
+        update_rate = self._declare_param("update_rate", DEFAULT_UPDATE_RATE_HZ)
+        frame_id = self._declare_param("frame_id", DEFAULT_FRAME_ID)
 
-        # Parameters
-        self.declare_parameter("aircraft", DEFAULT_AIRCRAFT)
-        self.declare_parameter("update_rate", DEFAULT_UPDATE_RATE_HZ)
-        self.declare_parameter("frame_id", DEFAULT_FRAME_ID)
-
-        aircraft = self.get_parameter("aircraft").value
-        self._update_interval_s = 1.0 / self.get_parameter("update_rate").value
-        self._frame_id = self.get_parameter("frame_id").value
+        ns = f"jsbsim_{instance_id}" if instance_id else "jsbsim"
+        super().__init__(ns)
+        self._ns = ns
+        self._instance_id = instance_id
+        self._dt = 1.0 / update_rate
+        self._frame_id = frame_id
 
         # Initialize JSBSim
         self._fdm = self._init_jsbsim(aircraft)
         if self._fdm is None:
             raise RuntimeError(f"Failed to load JSBSim aircraft: {aircraft}")
 
-        # Publishers
-        self._pose_pub = self.create_publisher(PoseStamped, "/jsbsim/pose", 10)
-        self._velocity_pub = self.create_publisher(TwistStamped, "/jsbsim/velocity", 10)
+        # Simulation time tracking (locked to /clock)
+        self._last_clock: float | None = None
+        self._sim_lag: float = 0.0
 
-        # Subscribers
-        self._control_sub = self.create_subscription(
-            Float64MultiArray, "/jsbsim/controls",
-            self._control_callback, 10
-        )
+        # Publishers
+        topic_prefix = f"/{ns}"
+        self._pose_pub = self.create_publisher(PoseStamped, f"{topic_prefix}/pose", 10)
+        self._velocity_pub = self.create_publisher(TwistStamped, f"{topic_prefix}/velocity", 10)
+        self._pose_cov_pub = self.create_publisher(PoseStamped, f"{topic_prefix}/pose_ground_truth", 10)
+
+        # Clock subscriber (Gazebo sync)
+        self.create_subscription(Clock, "/clock", self._clock_callback, 10)
+
+        # Control subscriber
         self._latest_controls = [0.0, 0.0, 0.0, 0.0]
         self._controls_lock = threading.Lock()
-
-        # Simulation timer
-        self._sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
-        self._sim_running = True
-        self._sim_thread.start()
-
-        self.get_logger().info(
-            f"[jsbsim] Loaded {aircraft} at {self.get_parameter('update_rate').value} Hz"
+        self.create_subscription(
+            Float64MultiArray, f"{topic_prefix}/controls",
+            self._control_callback, 10
         )
 
+        # Timer-driven simulation step (best-effort, clock callback does the real work)
+        self.create_timer(self._dt, self._step_if_clock_elapsed)
+
+        self.get_logger().info(
+            f"[jsbsim:{instance_id}] Loaded {aircraft} @ {update_rate}Hz,"
+            f" topics under /{ns}/"
+        )
+
+    # ── Parameter helpers ───────────────────────────────────────────────
+
+    def _declare_param(self, name: str, default):
+        self.declare_parameter(name, default)
+        return self.get_parameter(name).value
+
+    # ── JSBSim init ─────────────────────────────────────────────────────
+
     def _init_jsbsim(self, aircraft: str):
-        """Initialize JSBSim FDM with the given aircraft model."""
         try:
             import jsbsim
             root = jsbsim.get_default_root_dir()
             fdm = jsbsim.FGFDMExec(root, None)
             fdm.load_model(aircraft)
-            fdm.set_dt(self._update_interval_s)
+            fdm.set_dt(self._dt)
             fdm.run_ic()
-            fdm.run()
+            for _ in range(10):
+                fdm.run()
             self.get_logger().info(f"[jsbsim] Aircraft {aircraft} initialized")
             return fdm
         except Exception as e:
             self.get_logger().error(f"[jsbsim] Init failed: {e}")
             return None
 
-    def _control_callback(self, msg: Float64MultiArray):
-        """Store latest control surface commands."""
-        with self._controls_lock:
-            n = min(len(msg.data), len(self._latest_controls))
-            self._latest_controls[:n] = msg.data[:n]
+    # ── Clock sync ──────────────────────────────────────────────────────
 
-    def _sim_loop(self):
-        """Run JSBSim simulation loop at the configured update rate."""
-        import rclpy
-        while self._sim_running and rclpy.ok():
+    def _clock_callback(self, msg: Clock):
+        t = msg.clock.sec + msg.clock.nanosec / 1e9
+        if self._last_clock is not None:
+            elapsed = t - self._last_clock
+            if elapsed > 0:
+                self._sim_lag += elapsed
+        self._last_clock = t
+
+    def _step_if_clock_elapsed(self):
+        """Step JSBSim to catch up with simulation clock."""
+        steps = 0
+        max_steps = int(1.0 / self._dt)  # Safety: at most 1 sim-second per tick
+        while self._sim_lag >= self._dt and steps < max_steps:
             self._step()
-            self._fdm.run()
-            rclpy.spin_once(self, timeout_sec=0)
+            self._sim_lag -= self._dt
+            steps += 1
+        if steps:
+            self.get_logger().debug(f"[jsbsim] Stepped {steps}x ({self._sim_lag:.4f}s remaining)")
+
+    # ── Control input ───────────────────────────────────────────────────
+
+    def _control_callback(self, msg: Float64MultiArray):
+        with self._controls_lock:
+            for i in range(min(len(msg.data), 4)):
+                self._latest_controls[i] = msg.data[i]
+
+    # ── Simulation step ─────────────────────────────────────────────────
 
     def _step(self):
-        """Apply controls and publish state."""
         fdm = self._fdm
         if fdm is None:
             return
 
-        # Apply latest control inputs
+        # Apply control inputs
         with self._controls_lock:
-            props = fdm.get_property_catalog()
-            for i, prop in enumerate(CONTROL_PROPERTIES):
-                if i < len(self._latest_controls):
-                    try:
-                        fdm[prop] = self._latest_controls[i]
-                    except KeyError:
-                        pass
+            for prop, val in zip(CONTROL_PROPERTIES, self._latest_controls):
+                jsb_prop = JSBSIM_PROPERTIES[prop]
+                try:
+                    fdm[jsb_prop] = val
+                except KeyError:
+                    pass
 
-        # Read aircraft state
-        lat = fdm["position/lat-gc-rad"] * 180.0 / math.pi
-        lon = fdm["position/lon-gc-rad"] * 180.0 / math.pi
-        alt = fdm["position/h-sl-meters"]
-        phi = fdm["attitude/phi-rad"]
-        theta = fdm["attitude/theta-rad"]
-        psi = fdm["attitude/psi-rad"]
+        fdm.run()
 
-        v_north = fdm["velocity/v-north-fps"] * 0.3048  # fps → m/s
-        v_east = fdm["velocity/v-east-fps"] * 0.3048
-        v_down = fdm["velocity/v-down-fps"] * 0.3048
+        # Read state (in one batch)
+        state = self._read_state(fdm)
+        if state is None:
+            return
 
-        # Publish pose
-        pose_msg = PoseStamped()
-        pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.header.frame_id = self._frame_id
-        pose_msg.pose.position.x = lon
-        pose_msg.pose.position.y = lat
-        pose_msg.pose.position.z = alt
-        # Simplified quaternion from euler (roll/pitch/yaw)
+        self._publish_state(state)
+
+    def _read_state(self, fdm):
+        """Read JSBSim state properties into a dict, returns None on failure."""
+        try:
+            lat = fdm[JSBSIM_PROPERTIES["lat"]]
+            lon = fdm[JSBSIM_PROPERTIES["lon"]]
+            alt = fdm[JSBSIM_PROPERTIES["alt"]]
+            phi = fdm[JSBSIM_PROPERTIES["phi"]]
+            theta = fdm[JSBSIM_PROPERTIES["theta"]]
+            psi = fdm[JSBSIM_PROPERTIES["psi"]]
+            vn = fdm[JSBSIM_PROPERTIES["v_north"]] * FPS_TO_MPS
+            ve = fdm[JSBSIM_PROPERTIES["v_east"]] * FPS_TO_MPS
+            vd = fdm[JSBSIM_PROPERTIES["v_down"]] * FPS_TO_MPS
+        except KeyError as e:
+            self.get_logger().warn(f"[jsbsim] Property missing: {e}")
+            return None
+
+        # Euler → quaternion
         cy = math.cos(psi * 0.5)
         sy = math.sin(psi * 0.5)
         cp = math.cos(theta * 0.5)
         sp = math.sin(theta * 0.5)
         cr = math.cos(phi * 0.5)
         sr = math.sin(phi * 0.5)
-        pose_msg.pose.orientation.w = cr * cp * cy + sr * sp * sy
-        pose_msg.pose.orientation.x = sr * cp * cy - cr * sp * sy
-        pose_msg.pose.orientation.y = cr * sp * cy + sr * cp * sy
-        pose_msg.pose.orientation.z = cr * cp * sy - sr * sp * cy
-        self._pose_pub.publish(pose_msg)
 
-        # Publish velocity
-        vel_msg = TwistStamped()
-        vel_msg.header.stamp = pose_msg.header.stamp
-        vel_msg.header.frame_id = self._frame_id
-        vel_msg.twist.linear.x = v_north
-        vel_msg.twist.linear.y = v_east
-        vel_msg.twist.linear.z = v_down
-        vel_msg.twist.angular.x = fdm["attitude/pitch-rate-rad_sec"]
-        vel_msg.twist.angular.y = fdm["attitude/roll-rate-rad_sec"]
-        vel_msg.twist.angular.z = fdm["attitude/yaw-rate-rad_sec"]
-        self._velocity_pub.publish(vel_msg)
+        return {
+            "lat": lat * 180.0 / math.pi,
+            "lon": lon * 180.0 / math.pi,
+            "alt": alt,
+            "qx": sr * cp * cy - cr * sp * sy,
+            "qy": cr * sp * cy + sr * cp * sy,
+            "qz": cr * cp * sy - sr * sp * cy,
+            "qw": cr * cp * cy + sr * sp * sy,
+            "vx": vn, "vy": ve, "vz": vd,
+            "vwx": 0.0, "vwy": 0.0, "vwz": 0.0,  # angular rates not available in c172p
+        }
 
-        self.get_logger().debug(
-            f"[jsbsim] pos=({lat:.4f}, {lon:.4f}, {alt:.1f}) "
-            f"vel=({v_north:.1f}, {v_east:.1f}, {v_down:.1f})"
-        )
+    def _publish_state(self, state: dict):
+        stamp = self.get_clock().now().to_msg()
+        hdr = Header(stamp=stamp, frame_id=self._frame_id)
 
-    def destroy_node(self):
-        self._sim_running = False
-        if self._sim_thread.is_alive():
-            self._sim_thread.join(timeout=2.0)
-        super().destroy_node()
+        # Pose
+        pose = PoseStamped(header=hdr)
+        pose.pose.position.x = state["lon"]
+        pose.pose.position.y = state["lat"]
+        pose.pose.position.z = state["alt"]
+        pose.pose.orientation.x = state["qx"]
+        pose.pose.orientation.y = state["qy"]
+        pose.pose.orientation.z = state["qz"]
+        pose.pose.orientation.w = state["qw"]
+        self._pose_pub.publish(pose)
+
+        # Velocity
+        vel = TwistStamped(header=hdr)
+        vel.twist.linear.x = state["vx"]
+        vel.twist.linear.y = state["vy"]
+        vel.twist.linear.z = state["vz"]
+        vel.twist.angular.x = state["vwx"]
+        vel.twist.angular.y = state["vwy"]
+        vel.twist.angular.z = state["vwz"]
+        self._velocity_pub.publish(vel)
+
+        # Ground truth (same as pose for now)
+        self._pose_cov_pub.publish(pose)
 
 
 def main(args=None):
