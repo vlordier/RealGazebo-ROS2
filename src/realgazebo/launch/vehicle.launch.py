@@ -139,6 +139,7 @@ def launch_setup(context, *args, **kwargs):
 
     instance_id = int(LaunchConfiguration('instance_id').perform(context))
     vehicle_type = LaunchConfiguration('vehicle_type').perform(context)
+    firmware = LaunchConfiguration('firmware').perform(context)
     spawnpoint_str = LaunchConfiguration('spawnpoint').perform(context)
     px4_path = LaunchConfiguration('px4_path').perform(context)
     unreal_ip = LaunchConfiguration('unreal_ip').perform(context)
@@ -152,6 +153,7 @@ def launch_setup(context, *args, **kwargs):
         raise ValueError(f"Spawnpoint must have 4 values (x,y,z,yaw), got: {spawnpoint_str}")
 
     gazebo_path = f"{px4_path}/Tools/simulation/gz"
+    ap_gazebo_path = f"{px4_path}/ardupilot_gazebo"  # ArduPilot Gazebo plugin path
 
     # Environment variables
     model_path_env = SetEnvironmentVariable(
@@ -161,16 +163,20 @@ def launch_setup(context, *args, **kwargs):
 
     plugin_paths = [
         "$GZ_SIM_SYSTEM_PLUGIN_PATH",
-        f"{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins",
         f"{current_package_prefix}/lib/realgazebo",
     ]
+    if firmware == "ardupilot":
+        plugin_paths.append(f"{ap_gazebo_path}/build")
+    else:
+        plugin_paths.append(f"{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins")
+
     plugin_path_env = SetEnvironmentVariable(
         'GZ_SIM_SYSTEM_PLUGIN_PATH',
         ':'.join(plugin_paths)
     )
 
     uxrce_dds_synct_param_env = SetEnvironmentVariable('PX4_PARAM_UXRCE_DDS_SYNCT', '0')
-    uxrce_dds_ptcfg_env = SetEnvironmentVariable('PX4_PARAM_UXRCE_DDS_PTCFG', '2')  # Use px4_participant profile
+    uxrce_dds_ptcfg_env = SetEnvironmentVariable('PX4_PARAM_UXRCE_DDS_PTCFG', '2')
 
     actions = []
     timed_actions = []
@@ -199,27 +205,30 @@ def launch_setup(context, *args, **kwargs):
     </participant>
 </profiles>'''
 
-    dds_profile_dir = '/tmp/dds_profiles'
-    os.makedirs(dds_profile_dir, exist_ok=True)
-    dds_profile_path = os.path.join(dds_profile_dir, f'px4_participant_{instance_id}.xml')
-    with open(dds_profile_path, 'w') as f:
-        f.write(dds_profile_content)
+    # === PX4-specific setup ===
+    if firmware == "px4":
+        dds_profile_dir = '/tmp/dds_profiles'
+        os.makedirs(dds_profile_dir, exist_ok=True)
+        dds_profile_path = os.path.join(dds_profile_dir, f'px4_participant_{instance_id}.xml')
+        with open(dds_profile_path, 'w') as f:
+            f.write(dds_profile_content)
 
-    fastrtps_env = SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', dds_profile_path)
+        fastrtps_env = SetEnvironmentVariable('FASTRTPS_DEFAULT_PROFILES_FILE', dds_profile_path)
 
-    # 1. MicroXRCEAgent - runs on port 8888, uses vehicle-network interface only
-    xrce_agent_process = ExecuteProcess(
-        cmd=[FindExecutable(name='MicroXRCEAgent'), 'udp4', '-p', '8888', '-r', dds_profile_path]
-    )
-    actions.append(xrce_agent_process)
+        # 1. MicroXRCEAgent - DDS bridge for PX4
+        xrce_agent_process = ExecuteProcess(
+            cmd=[FindExecutable(name='MicroXRCEAgent'), 'udp4', '-p', '8888', '-r', dds_profile_path]
+        )
+        actions.append(xrce_agent_process)
 
     # 2. Generate vehicle SDF from Jinja template
     model_save_dir = os.path.join('/tmp', 'models')
     os.makedirs(model_save_dir, exist_ok=True)
 
+    # Render SDF template (same for both firmwares, template handles plugin selection)
     env = Environment(loader=FileSystemLoader(os.path.join(current_package_path, 'models')))
     model = env.get_template(f'{vehicle_type}.sdf.jinja')
-    output_model = model.render(unreal_ip=unreal_ip, unreal_port=unreal_port)
+    output_model = model.render(unreal_ip=unreal_ip, unreal_port=unreal_port, firmware=firmware)
     model_file_path = os.path.join(model_save_dir, f'{vehicle_type}.sdf')
     with open(model_file_path, 'w') as f:
         f.write(output_model)
@@ -246,37 +255,56 @@ def launch_setup(context, *args, **kwargs):
     )
     timed_actions.append(spawn_entity)
 
-    # 4. PX4 SITL instance (after spawn)
-    autostart_id = get_autostart_id(vehicle_type, px4_path)
+    # 4. SITL instance (after spawn) - PX4 or ArduPilot
+    if firmware == "px4":
+        autostart_id = get_autostart_id(vehicle_type, px4_path)
 
-    px4_env = {
-        'PX4_GZ_STANDALONE': '1',
-        'PX4_SYS_AUTOSTART': autostart_id,
-        'PX4_GZ_MODEL_NAME': f'{vehicle_type}_{instance_id}',
-        'PX4_UXRCE_DDS_NS': f'vehicle{instance_id + 1}',
-        'PX4_GZ_WORLD': 'c-track'
-    }
+        px4_env = {
+            'PX4_GZ_STANDALONE': '1',
+            'PX4_SYS_AUTOSTART': autostart_id,
+            'PX4_GZ_MODEL_NAME': f'{vehicle_type}_{instance_id}',
+            'PX4_UXRCE_DDS_NS': f'vehicle{instance_id + 1}',
+            'PX4_GZ_WORLD': 'c-track'
+        }
 
-    px4_binary = f"{px4_path}/build/px4_sitl_default/bin/px4"
-    px4_process = ExecuteProcess(
-        cmd=[px4_binary, '-i', str(instance_id)],
-        additional_env=px4_env,
-        output='screen',
-    )
-    timed_actions.append(px4_process)
+        px4_binary = f"{px4_path}/build/px4_sitl_default/bin/px4"
+        px4_process = ExecuteProcess(
+            cmd=[px4_binary, '-i', str(instance_id)],
+            additional_env=px4_env,
+            output='screen',
+        )
+        timed_actions.append(px4_process)
 
-    # 5. PX4 parameter configuration (after PX4 starts)
-    px4_param_binary = f"{px4_path}/build/px4_sitl_default/bin/px4-param"
+        # 5. PX4 parameter configuration (after PX4 starts)
+        px4_param_binary = f"{px4_path}/build/px4_sitl_default/bin/px4-param"
 
-    param_commands = [
-        (px4_param_binary, '--instance', str(instance_id), 'set', 'NAV_DLL_ACT', '0'),
-        (px4_param_binary, '--instance', str(instance_id), 'set', 'COM_RCL_EXCEPT', '31'),
-        (px4_param_binary, '--instance', str(instance_id), 'set', 'COM_RC_IN_MODE', '4'),
-    ]
+        param_commands = [
+            (px4_param_binary, '--instance', str(instance_id), 'set', 'NAV_DLL_ACT', '0'),
+            (px4_param_binary, '--instance', str(instance_id), 'set', 'COM_RCL_EXCEPT', '31'),
+            (px4_param_binary, '--instance', str(instance_id), 'set', 'COM_RC_IN_MODE', '4'),
+        ]
 
-    for cmd in param_commands:
-        param_process = ExecuteProcess(cmd=list(cmd))
-        timed_actions.append(param_process)
+        for cmd in param_commands:
+            param_process = ExecuteProcess(cmd=list(cmd))
+            timed_actions.append(param_process)
+
+    elif firmware == "ardupilot":
+        ap_home = f"{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}"
+        ap_binary = f"/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter"
+
+        ardupilot_process = ExecuteProcess(
+            cmd=[
+                ap_binary,
+                f'-I{instance_id}',
+                '--model', f'gazebo-{vehicle_type}',
+                '--home', ap_home,
+                '--speedup', '1',
+                '--instance', str(instance_id),
+                f'--uartC', 'tcp:0',
+            ],
+            output='screen',
+        )
+        timed_actions.append(ardupilot_process)
 
     # 6. ROS2 control nodes (optional, after everything is ready)
     if start_control_node:
@@ -342,12 +370,13 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_start = [
         model_path_env,
         plugin_path_env,
-        uxrce_dds_synct_param_env,
-        uxrce_dds_ptcfg_env,
-        fastrtps_env,
         *actions,
         *timed_action_nodes,
     ]
+    if firmware == "px4":
+        nodes_to_start.insert(2, fastrtps_env)
+        nodes_to_start.insert(2, uxrce_dds_ptcfg_env)
+        nodes_to_start.insert(2, uxrce_dds_synct_param_env)
 
     return nodes_to_start
 
@@ -359,6 +388,14 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'instance_id',
             description='Vehicle instance ID (0, 1, 2, ...)'
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'firmware',
+            default_value='px4',
+            description='Flight controller firmware (px4 or ardupilot)'
         )
     )
 

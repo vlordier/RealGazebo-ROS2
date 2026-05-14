@@ -4,6 +4,11 @@
     <include merge='true'>
       <uri>model://x500_base</uri>
     </include>
+{% if firmware == "ardupilot" %}
+    <plugin filename="gz-ardupilot" name="ArduPilot">
+      <instance_id>{{ unreal_port }}</instance_id>
+    </plugin>
+{% else %}
     <plugin filename="gz-sim-multicopter-motor-model-system"
       name="gz::sim::systems::MulticopterMotorModel">
       <jointName>rotor_0_joint</jointName>
@@ -72,6 +77,7 @@
       <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
       <motorType>velocity</motorType>
     </plugin>
+{% endif %}
     <plugin filename="libRealGazebo.so" name="custom::RealGazebo">
       <unreal_ip>{{ unreal_ip }}</unreal_ip>
       <unreal_port>{{ unreal_port }}</unreal_port>

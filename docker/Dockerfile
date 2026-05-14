@@ -238,6 +238,19 @@ RUN cd /home/user/realgazebo/RealGazebo-PX4 \
    && . /opt/ros/$ROS_DISTRO/setup.sh \
    && colcon build --symlink-install --parallel-workers $(nproc)
 
+# Build ArduPilot SITL and Gazebo plugin
+RUN cd /home/user/realgazebo \
+    && git clone --depth 1 --branch Copter-4.6.0 https://github.com/ArduPilot/ardupilot.git \
+    && cd ardupilot && git submodule update --init --depth 1 modules/waf \
+    && python3 modules/waf/configure --board sitl \
+    && python3 modules/waf copter
+
+RUN cd /home/user/realgazebo \
+    && git clone --depth 1 https://github.com/ArduPilot/ardupilot_gazebo.git \
+    && cd ardupilot_gazebo && mkdir -p build && cd build \
+    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    && make -j$(nproc) && make install
+
 USER root
 # Add setup file at bashrc
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /home/user/.bashrc \

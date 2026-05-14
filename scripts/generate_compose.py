@@ -139,21 +139,25 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
         vehicle_network_ip = f'172.30.0.{10 + vid}'
 
         # Create vehicle service
+        v_firmware = vehicle.get('firmware', 'px4')
+        env_vars = [
+            'DISPLAY=${DISPLAY:-:0}',
+            'QT_X11_NO_MITSHM=1',
+            f'GZ_IP={vehicle_gazebo_ip}',
+            'GZ_PARTITION=realgazebo',
+            'LOCAL_USER_ID=${LOCAL_USER_ID:-1000}',
+            'MAVLINK_GCS_IP=${MAVLINK_GCS_IP:-172.17.0.1}',
+        ]
+        if v_firmware == 'px4':
+            env_vars.append('PX4_GZ_STANDALONE=1')
+            env_vars.append(f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{vid}.xml')
+
         compose['services'][service_name] = {
             'image': 'aware4docker/realgazebo:1.2',
             'container_name': service_name,
             'hostname': service_name,
             'privileged': True,
-            'environment': [
-                'DISPLAY=${DISPLAY:-:0}',
-                'QT_X11_NO_MITSHM=1',
-                f'GZ_IP={vehicle_gazebo_ip}',
-                'GZ_PARTITION=realgazebo',
-                'PX4_GZ_STANDALONE=1',
-                'LOCAL_USER_ID=${LOCAL_USER_ID:-1000}',
-                'MAVLINK_GCS_IP=${MAVLINK_GCS_IP:-172.17.0.1}',  # PX4 sends MAVLink to host
-                f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{vid}.xml',
-            ],
+            'environment': env_vars,
             'volumes': [
                 '/tmp/.X11-unix:/tmp/.X11-unix',
             ],
@@ -176,7 +180,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                     'condition': 'service_healthy'
                 }
             },
-            'command': f'bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} spawnpoint:={spawnpoint_str} px4_path:=/home/user/realgazebo/RealGazebo-PX4 unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
+            'command': f'bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:=/home/user/realgazebo/RealGazebo-PX4 unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
             'deploy': {
                 'resources': {
                     'limits': {
