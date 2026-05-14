@@ -16,7 +16,6 @@ import yaml
 from pydantic import BaseModel, Field
 
 
-# Obstacle types are spawned by the Gazebo container, not as separate vehicles
 SUPPORT_OBSTACLE = ['rock']
 
 
@@ -32,7 +31,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Generate docker-compose.override.yml from vehicle configuration'
     )
-    parser.add_argument('config_file', help='Path to vehicle YAML configuration file')
+    parser.add_argument('config_file', nargs='?',
+                        help='Path to vehicle YAML configuration file')
     parser.add_argument('output_file', nargs='?', default=None,
                         help='Output path for docker-compose.override.yml (default: project root)')
     parser.add_argument('--unreal-ip', default='host.docker.internal',
@@ -47,6 +47,8 @@ def parse_args():
                         help='Run in headless mode (default: true)')
     parser.add_argument('--gui', action='store_true',
                         help='Run with Gazebo GUI (disables headless)')
+    parser.add_argument('--validate', action='store_true',
+                        help='Validate YAML config and exit (dry-run, no file written)')
     return parser.parse_args()
 
 
@@ -94,62 +96,63 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                               world='c-track', headless=True, image='realgazebo:base'):
     """Generate docker-compose.override.yml content from YAML config.
 
-    Returns dict with keys: 'services' (vehicle services), '_summary' (vehicle list for printing).
+    Two lightweight passes: first collects metadata and builds the model list,
+    second builds full service dicts (needs the complete model list for commands).
     """
-    compose = {'services': {}}
     build_targets = config.get('build_targets', {}) or {}
     vehicles = config.get('vehicles', {})
 
-    # Single-pass: build vehicle_models and generate services simultaneously
     vehicle_models = []
-    summary = []
-
+    vmeta = []
     for vid, vehicle in vehicles.items():
         vid = int(vid)
         vtype = vehicle.get('type')
-
         if not _is_vehicle(vtype):
             print(f"  [SKIP] vehicle_{vid}: type '{vtype}' is an obstacle, handled by Gazebo container")
             continue
-
         vehicle_models.append(f'{vtype}_{vid}')
+        vmeta.append({
+            'vid': vid, 'vtype': vtype,
+            'v_firmware': vehicle.get('firmware', 'px4'),
+            'v_build_target': vehicle.get('build_target', 0),
+            'spawnpoint': parse_spawnpoint(vehicle.get('spawnpoint')),
+            'service_name': f'vehicle_{vid}',
+            'vehicle_gazebo_ip': f'172.20.0.{10 + vid}',
+            'vehicle_network_ip': f'172.30.0.{10 + vid}',
+        })
 
-        v_firmware = vehicle.get('firmware', 'px4')
-        v_build_target = vehicle.get('build_target', 0)
-        px4_path = build_targets.get(v_build_target, '/home/user/realgazebo/RealGazebo-PX4')
-        spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
-        spawnpoint_str = ','.join(map(str, spawnpoint))
+    vehicle_models_str = ','.join(vehicle_models)
+    compose = {'services': {}}
 
-        vehicle_gazebo_ip = f'172.20.0.{10 + vid}'
-        vehicle_network_ip = f'172.30.0.{10 + vid}'
+    for m in vmeta:
+        px4_path = build_targets.get(m['v_build_target'], '/home/user/realgazebo/RealGazebo-PX4')
+        spawnpoint_str = ','.join(map(str, m['spawnpoint']))
 
         env_vars = [
             'DISPLAY=${DISPLAY:-:0}',
             'QT_X11_NO_MITSHM=1',
-            f'GZ_IP={vehicle_gazebo_ip}',
+            f'GZ_IP={m["vehicle_gazebo_ip"]}',
             'GZ_PARTITION=realgazebo',
             'LOCAL_USER_ID=${LOCAL_USER_ID:-1000}',
             'MAVLINK_GCS_IP=${MAVLINK_GCS_IP:-172.17.0.1}',
         ]
-        if v_firmware == 'px4':
+        if m['v_firmware'] == 'px4':
             env_vars.append('PX4_GZ_STANDALONE=1')
-            env_vars.append(f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{vid}.xml')
+            env_vars.append(f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{m["vid"]}.xml')
 
-        vehicle_models_str = ''  # placeholder, filled after the loop
-        service_name = f'vehicle_{vid}'
-        compose['services'][service_name] = {
+        compose['services'][m['service_name']] = {
             'image': image,
-            'container_name': service_name,
-            'hostname': service_name,
+            'container_name': m['service_name'],
+            'hostname': m['service_name'],
             'privileged': True,
             'environment': env_vars,
             'volumes': ['/tmp/.X11-unix:/tmp/.X11-unix'],
             'networks': {
-                'gazebo-network': {'ipv4_address': vehicle_gazebo_ip},
-                'vehicle-network': {'ipv4_address': vehicle_network_ip},
+                'gazebo-network': {'ipv4_address': m['vehicle_gazebo_ip']},
+                'vehicle-network': {'ipv4_address': m['vehicle_network_ip']},
             },
             'extra_hosts': ['host.docker.internal:host-gateway'],
-            'ports': [f'{18570 + vid}:{18570 + vid}/udp'],
+            'ports': [f'{18570 + m["vid"]}:{18570 + m["vid"]}/udp'],
             'depends_on': {'gazebo': {'condition': 'service_healthy'}},
             'healthcheck': {
                 'test': ['CMD-SHELL',
@@ -158,40 +161,40 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
             },
             'restart': 'unless-stopped',
             'stop_grace_period': '30s',
+            'command': (
+                f'bash -c "exec > >(sed \\\"s/^/[vehicle_{m["vid"]}] /\\\") 2>&1; '
+                f'sleep $(({m["vid"]} * 5)); '
+                f'source /opt/ros/jazzy/setup.bash && '
+                f'source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && '
+                f'ros2 launch realgazebo vehicle.launch.py '
+                f'instance_id:={m["vid"]} vehicle_type:={m["vtype"]} firmware:={m["v_firmware"]} '
+                f'spawnpoint:={spawnpoint_str} px4_path:={px4_path} '
+                f'unreal_ip:={unreal_ip} unreal_port:={unreal_port} '
+                f'vehicle_models:={vehicle_models_str}"'
+            ),
             'deploy': {'resources': {'limits': {'memory': '4G'}}},
         }
-        summary.append({'id': vid, 'type': vtype, 'spawnpoint': spawnpoint})
-
-    # Second pass: inject vehicle_models_str into every service command
-    vehicle_models_str = ','.join(vehicle_models)
-    for vid, vehicle in vehicles.items():
-        vid = int(vid)
-        vtype = vehicle.get('type')
-        if not _is_vehicle(vtype):
-            continue
-        service_name = f'vehicle_{vid}'
-        v_firmware = vehicle.get('firmware', 'px4')
-        v_build_target = vehicle.get('build_target', 0)
-        px4_path = build_targets.get(v_build_target, '/home/user/realgazebo/RealGazebo-PX4')
-        spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
-        spawnpoint_str = ','.join(map(str, spawnpoint))
-        compose['services'][service_name]['command'] = (
-            f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; '
-            f'sleep $(({vid} * 5)); '
-            f'source /opt/ros/jazzy/setup.bash && '
-            f'source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && '
-            f'ros2 launch realgazebo vehicle.launch.py '
-            f'instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} '
-            f'spawnpoint:={spawnpoint_str} px4_path:={px4_path} '
-            f'unreal_ip:={unreal_ip} unreal_port:={unreal_port} '
-            f'vehicle_models:={vehicle_models_str}"'
-        )
 
     return compose
 
 
 def main():
     args = parse_args()
+
+    # --validate: dry-run, just validate the config
+    if args.validate:
+        if not args.config_file:
+            print("Usage: generate_compose.py <config_file> --validate")
+            sys.exit(1)
+        config = load_config(args.config_file)
+        print(f"Config '{args.config_file}' is valid.")
+        print(f"  - {len(config.get('vehicles', {}))} vehicle(s) defined")
+        return
+
+    if not args.config_file:
+        print("Error: config_file is required (use --validate for dry-run)")
+        sys.exit(1)
+
     headless = not args.gui if args.gui else args.headless
 
     if args.output_file:

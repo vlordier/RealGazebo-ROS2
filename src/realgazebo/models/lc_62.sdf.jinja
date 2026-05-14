@@ -1304,7 +1304,11 @@
       <rotorVelocitySlowdownSim>20</rotorVelocitySlowdownSim>
       <motorType>velocity</motorType>
     </plugin>
-{% if firmware == "px4" %}
+{% if firmware == "ardupilot" %}
+    <plugin filename="gz-ardupilot" name="ArduPilot">
+      <instance_id>{{ unreal_port }}</instance_id>
+    </plugin>
+{% elif firmware == "px4" %}
     <plugin filename="MotorFailureROS2" name="custom::MotorFailureROS2System">
     </plugin>
     <plugin filename="ServoFailureROS2" name="custom::ServoFailureROS2System">
