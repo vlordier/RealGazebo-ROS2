@@ -108,7 +108,9 @@ for name, cls in [("LogMessage", MagicMock), ("VehicleStatus", MockVehicleStatus
 
 mock_std_msgs.msg.String = MagicMock
 
-from drone_controller.drone_controller import DroneController, nav_state
+from drone_controller.drone_controller import (
+    DroneController, NavState, MissionTick, TAKEOFF_ALTITUDE_M, MOVE_DISTANCE_NORTH_M,
+)
 
 
 class TestDroneController(unittest.TestCase):
@@ -126,10 +128,10 @@ class TestDroneController(unittest.TestCase):
         self.assertEqual(self.controller.setpoint, [0, 0, 0])
 
     def test_nav_state_enum(self):
-        self.assertEqual(nav_state.NAVIGATION_STATE_MANUAL.value, 0)
-        self.assertEqual(nav_state.NAVIGATION_STATE_OFFBOARD.value, 14)
-        self.assertEqual(nav_state.NAVIGATION_STATE_AUTO_TAKEOFF.value, 17)
-        self.assertEqual(nav_state.NAVIGATION_STATE_AUTO_LAND.value, 18)
+        self.assertEqual(NavState.MANUAL.value, 0)
+        self.assertEqual(NavState.OFFBOARD.value, 14)
+        self.assertEqual(NavState.AUTO_TAKEOFF.value, 17)
+        self.assertEqual(NavState.AUTO_LAND.value, 18)
 
     def test_control_arm(self):
         with patch.object(self.controller, 'vehicle_command_publisher_') as pub:

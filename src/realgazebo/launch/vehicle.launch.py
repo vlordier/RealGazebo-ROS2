@@ -13,6 +13,11 @@ import os
 import yaml
 import xml.etree.ElementTree as ET
 
+# ── Timing Constants ────────────────────────────────────────────────────────
+# These delays ensure gz-transport discovery completes before PX4 subscribes
+VEHICLE_SPAWN_DELAY_S = 10.0
+VEHICLE_ACTION_INTERVAL_S = 5.0
+
 from jinja2 import Environment, FileSystemLoader
 
 from ament_index_python.packages import get_package_share_directory, get_package_prefix
@@ -363,8 +368,8 @@ def launch_setup(context, *args, **kwargs):
     # Increased delays to ensure gz-transport discovery completes before PX4 subscribes
     timed_action_nodes = create_timed_actions(
         timed_actions,
-        initial_delay=10.0,
-        interval=5.0
+        initial_delay=VEHICLE_SPAWN_DELAY_S,
+        interval=VEHICLE_ACTION_INTERVAL_S
     )
 
     nodes_to_start = [

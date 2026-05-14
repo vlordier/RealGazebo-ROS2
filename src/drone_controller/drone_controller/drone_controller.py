@@ -14,39 +14,49 @@ from enum import Enum
 
 import math
 
-class nav_state(Enum):
-    NAVIGATION_STATE_MANUAL = 0               # Manual mode
-    NAVIGATION_STATE_ALTCTL = 1               # Altitude control mode
-    NAVIGATION_STATE_POSCTL = 2               # Position control mode
-    NAVIGATION_STATE_AUTO_MISSION = 3         # Auto mission mode
-    NAVIGATION_STATE_AUTO_LOITER = 4          # Auto loiter mode
-    NAVIGATION_STATE_AUTO_RTL = 5             # Auto return to launch mode
-    NAVIGATION_STATE_POSITION_SLOW = 6
-    NAVIGATION_STATE_FREE5 = 7
-    NAVIGATION_STATE_FREE4 = 8
-    NAVIGATION_STATE_FREE3 = 9
-    NAVIGATION_STATE_ACRO = 10                # Acro mode
-    NAVIGATION_STATE_FREE2 = 11
-    NAVIGATION_STATE_DESCEND = 12             # Descend mode (no position control)
-    NAVIGATION_STATE_TERMINATION = 13         # Termination mode
-    NAVIGATION_STATE_OFFBOARD = 14
-    NAVIGATION_STATE_STAB = 15                # Stabilized mode
-    NAVIGATION_STATE_FREE1 = 16
-    NAVIGATION_STATE_AUTO_TAKEOFF = 17        # Takeoff
-    NAVIGATION_STATE_AUTO_LAND = 18           # Land
-    NAVIGATION_STATE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
-    NAVIGATION_STATE_AUTO_PRECLAND = 20       # Precision land with landing target
-    NAVIGATION_STATE_ORBIT = 21               # Orbit in a circle
-    NAVIGATION_STATE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
-    NAVIGATION_STATE_EXTERNAL1 = 23
-    NAVIGATION_STATE_EXTERNAL2 = 24
-    NAVIGATION_STATE_EXTERNAL3 = 25
-    NAVIGATION_STATE_EXTERNAL4 = 26
-    NAVIGATION_STATE_EXTERNAL5 = 27
-    NAVIGATION_STATE_EXTERNAL6 = 28
-    NAVIGATION_STATE_EXTERNAL7 = 29
-    NAVIGATION_STATE_EXTERNAL8 = 30
-    NAVIGATION_STATE_MAX = 31
+# ── Nav State Enum ──────────────────────────────────────────────────────────
+
+class NavState(Enum):
+    MANUAL = 0
+    ALTCTL = 1
+    POSCTL = 2
+    AUTO_MISSION = 3
+    AUTO_LOITER = 4
+    AUTO_RTL = 5
+    POSITION_SLOW = 6
+    ACRO = 10
+    DESCEND = 12
+    TERMINATION = 13
+    OFFBOARD = 14
+    STAB = 15
+    AUTO_TAKEOFF = 17
+    AUTO_LAND = 18
+    AUTO_FOLLOW_TARGET = 19
+    AUTO_PRECLAND = 20
+    ORBIT = 21
+    AUTO_VTOL_TAKEOFF = 22
+
+# ── Mission Constants ───────────────────────────────────────────────────────
+
+# ── Mission Timing Constants ────────────────────────────────────────────────
+
+class MissionTick:
+    ARM = 50
+    TAKEOFF = 55
+    OFFBOARD = 145
+    MOVE = 155
+
+TAKEOFF_ALTITUDE_M = 5.0
+MOVE_DISTANCE_NORTH_M = 50.0
+POSITION_REACHED_THRESHOLD_M = 1.0
+CONTROL_LOOP_PERIOD_S = 0.1
+
+PX4_CUSTOM_MAIN_MODE_OFFBOARD = 6.0
+
+# ── Arming / Mode Constants (from PX4 definitions) ─────────────────────────
+
+ARM_CONFIRM = 1.0
+DISARM_PARAM = 0.0
 
 
 class DroneController(Node):
@@ -56,27 +66,49 @@ class DroneController(Node):
 
     def timer_display_info_callback(self):
         os.system('clear')
-        self.get_logger().info(f"Mode : {nav_state(self.vehicle_status_msg_.nav_state).name} ({'ARM' if self.vehicle_status_msg_.arming_state == VehicleStatus.ARMING_STATE_ARMED else 'DISARM'})")
-        self.get_logger().info(f"Vehicle local_position(ned) : ({self.vehicle_local_position_msg_.x:.2f}, {self.vehicle_local_position_msg_.y:.2f}, {self.vehicle_local_position_msg_.z:.2f})")
-        self.get_logger().info(f"last command : {self.last_command}")
+        nav = NavState(self.vehicle_status_msg_.nav_state)
+        arm_state = (
+            "ARM" if self.vehicle_status_msg_.arming_state == VehicleStatus.ARMING_STATE_ARMED
+            else "DISARM"
+        )
+        pos = self.vehicle_local_position_msg_
+        self.get_logger().info(
+            f"[dc] Mode={nav.name} {arm_state} "
+            f"pos=({pos.x:.2f}, {pos.y:.2f}, {pos.z:.2f}) "
+            f"cmd={self.last_command} tick={self.info_count}"
+        )
 
         self.info_count += 1
 
         match self.info_count:
-            case 50:
+            case MissionTick.ARM:
+                self.get_logger().info("[dc] Starting mission: ARM")
                 self.control_arm()
-            case 55:
-                self.control_takeoff(5)
-            case 145:
+            case MissionTick.TAKEOFF:
+                self.get_logger().info(f"[dc] Takeoff to {TAKEOFF_ALTITUDE_M}m")
+                self.control_takeoff(TAKEOFF_ALTITUDE_M)
+            case MissionTick.OFFBOARD:
+                self.get_logger().info("[dc] Switching to OFFBOARD mode")
                 self.control_offboard()
-            case 155:
-                self.setpoint[0] = self.vehicle_local_position_msg_.x
-                self.setpoint[1] = self.vehicle_local_position_msg_.y - 50
-                self.setpoint[2] = self.vehicle_local_position_msg_.z
-                self.control_setpoint(self.vehicle_local_position_msg_.x, self.vehicle_local_position_msg_.y - 50, self.vehicle_local_position_msg_.z, self.vehicle_local_position_msg_.heading)
+            case MissionTick.MOVE:
+                pos = self.vehicle_local_position_msg_
+                self.setpoint = [pos.x, pos.y - MOVE_DISTANCE_NORTH_M, pos.z]
+                self.get_logger().info(
+                    f"[dc] Moving to setpoint ({self.setpoint[0]:.1f}, {self.setpoint[1]:.1f}, {self.setpoint[2]:.1f})"
+                )
+                self.control_setpoint(
+                    self.setpoint[0], self.setpoint[1], self.setpoint[2],
+                    self.vehicle_local_position_msg_.heading
+                )
 
-        if self.info_count > 155 and math.sqrt((self.setpoint[0] - self.vehicle_local_position_msg_.x)**2 + (self.setpoint[1] - self.vehicle_local_position_msg_.y)**2 + (self.setpoint[2] - self.vehicle_local_position_msg_.z)**2) < 1:            
-            self.control_land()
+        if self.info_count > MissionTick.MOVE:
+            dx = self.setpoint[0] - self.vehicle_local_position_msg_.x
+            dy = self.setpoint[1] - self.vehicle_local_position_msg_.y
+            dz = self.setpoint[2] - self.vehicle_local_position_msg_.z
+            distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if distance < POSITION_REACHED_THRESHOLD_M:
+                self.get_logger().info(f"[dc] Setpoint reached, landing (dist={distance:.2f}m)")
+                self.control_land()
 
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position_msg_ = msg
@@ -86,19 +118,23 @@ class DroneController(Node):
 
     def vehicle_status_callback(self, msg):
         self.vehicle_status_msg_ = msg
+        self.get_logger().debug(
+            f"[dc] Status: nav_state={msg.nav_state} arming={msg.arming_state}"
+        )
 
     def timer_ocm_callback(self):
         self.ocm_publisher_.publish(self.ocm_msg_qhac_)
-    
+
     def control_arm(self):
         self.last_command = "arm"
         arm_cmd = VehicleCommand()
         arm_cmd.target_system = self.system_id_
         arm_cmd.command = VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM
-        arm_cmd.param1 = 1.0
+        arm_cmd.param1 = ARM_CONFIRM
         arm_cmd.confirmation = True
         arm_cmd.from_external = True
         self.vehicle_command_publisher_.publish(arm_cmd)
+        self.get_logger().info(f"[dc] Arm command sent to system {self.system_id_}")
 
     def control_takeoff(self, altitude):
         self.last_command = "takeoff"
@@ -106,20 +142,19 @@ class DroneController(Node):
         takeoff_cmd.target_system = self.system_id_
         takeoff_cmd.command = VehicleCommand.VEHICLE_CMD_NAV_TAKEOFF
         takeoff_cmd.param1 = -1.0
-        takeoff_cmd.param2 = 0.0
-        takeoff_cmd.param3 = 0.0
         takeoff_cmd.param4 = self.vehicle_local_position_msg_.heading
         takeoff_cmd.param5 = self.vehicle_global_position_msg_.lat
         takeoff_cmd.param6 = self.vehicle_global_position_msg_.lon
         takeoff_cmd.param7 = self.vehicle_global_position_msg_.alt + altitude
         self.vehicle_command_publisher_.publish(takeoff_cmd)
+        self.get_logger().info(f"[dc] Takeoff command: altitude={altitude:.1f}m")
 
     def control_disarm(self):
         self.last_command = "disarm"
         disarm_cmd = VehicleCommand()
         disarm_cmd.target_system = self.system_id_
         disarm_cmd.command = VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM
-        disarm_cmd.param1 = 0.0
+        disarm_cmd.param1 = DISARM_PARAM
         disarm_cmd.confirmation = True
         self.vehicle_command_publisher_.publish(disarm_cmd)
 
@@ -129,9 +164,10 @@ class DroneController(Node):
         offboard_cmd.target_system = self.system_id_
         offboard_cmd.command = VehicleCommand.VEHICLE_CMD_DO_SET_MODE
         offboard_cmd.param1 = 1.0
-        offboard_cmd.param2 = 6.0  #PX4_CUSTOM_MAIN_MODE_OFFBOARD
+        offboard_cmd.param2 = PX4_CUSTOM_MAIN_MODE_OFFBOARD
         offboard_cmd.from_external = True
         self.vehicle_command_publisher_.publish(offboard_cmd)
+        self.get_logger().info(f"[dc] Offboard mode command sent")
 
     def control_setpoint(self, x, y, z, heading=None):
         self.last_command = "move"
@@ -150,72 +186,80 @@ class DroneController(Node):
         landing_cmd.command = VehicleCommand.VEHICLE_CMD_NAV_LAND
         landing_cmd.from_external = True
         self.vehicle_command_publisher_.publish(landing_cmd)
-    
+        self.get_logger().info(f"[dc] Land command sent")
+
     def initialize_node(self):
         self.declare_parameter('system_id', 1)
         self.system_id_ = self.get_parameter('system_id').get_parameter_value().integer_value
         self.last_command = "idle"
 
-        self.get_logger().info(
-            f"Configure drone_controller {self.system_id_}")
-        self.topic_prefix_manager_ = f"vehicle{self.get_parameter('system_id').get_parameter_value().integer_value}/manager/"
-        self.topic_prefix_fmu_ = f"vehicle{self.get_parameter('system_id').get_parameter_value().integer_value}/fmu/"
-        self.vehicle_status_subscriber = self.create_subscription(VehicleStatus,
-                                                                  f'{self.topic_prefix_fmu_}out/vehicle_status',
-                                                                  self.vehicle_status_callback,
-                                                                  qos_profile_sensor_data)
+        self.get_logger().info(f"[dc] Initializing drone_controller for system {self.system_id_}")
+
+        topic_prefix_fmu = f"vehicle{self.system_id_}/fmu/"
+
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus,
+            f'{topic_prefix_fmu}out/vehicle_status',
+            self.vehicle_status_callback,
+            qos_profile_sensor_data
+        )
         self.vehicle_status_msg_ = VehicleStatus()
 
         self.ocm_msg_qhac_ = OffboardControlMode()
         self.ocm_msg_qhac_.position = True
-        self.ocm_msg_qhac_.velocity = False
-        self.ocm_msg_qhac_.acceleration = False
-        self.ocm_msg_qhac_.attitude = False
-        self.ocm_msg_qhac_.body_rate = False
-        self.ocm_msg_qhac_.direct_actuator = False
-        self.ocm_publisher_ = self.create_publisher(OffboardControlMode,
-                                                    f'{self.topic_prefix_fmu_}in/offboard_control_mode',
-                                                    qos_profile_sensor_data)
+        self.ocm_publisher_ = self.create_publisher(
+            OffboardControlMode,
+            f'{topic_prefix_fmu}in/offboard_control_mode',
+            qos_profile_sensor_data
+        )
 
-        self.traj_setpoint_publisher_ = self.create_publisher(TrajectorySetpoint,
-                                                              f'{self.topic_prefix_fmu_}in/trajectory_setpoint',
-                                                              qos_profile_sensor_data)
+        self.traj_setpoint_publisher_ = self.create_publisher(
+            TrajectorySetpoint,
+            f'{topic_prefix_fmu}in/trajectory_setpoint',
+            qos_profile_sensor_data
+        )
 
-        self.vehicle_command_publisher_ = self.create_publisher(VehicleCommand,
-                                                                f'{self.topic_prefix_fmu_}in/vehicle_command',
-                                                                qos_profile_sensor_data)
+        self.vehicle_command_publisher_ = self.create_publisher(
+            VehicleCommand,
+            f'{topic_prefix_fmu}in/vehicle_command',
+            qos_profile_sensor_data
+        )
 
-        self.vehicle_local_position_subscriber_ = self.create_subscription(VehicleLocalPosition,
-                                                                           f'{self.topic_prefix_fmu_}out/vehicle_local_position',
-                                                                           self.vehicle_local_position_callback,
-                                                                           qos_profile_sensor_data)
+        self.vehicle_local_position_subscriber_ = self.create_subscription(
+            VehicleLocalPosition,
+            f'{topic_prefix_fmu}out/vehicle_local_position',
+            self.vehicle_local_position_callback,
+            qos_profile_sensor_data
+        )
         self.vehicle_local_position_msg_ = VehicleLocalPosition()
 
-        self.vehicle_global_position_subscriber = self.create_subscription(VehicleGlobalPosition,
-                                                                           f'{self.topic_prefix_fmu_}out/vehicle_global_position',
-                                                                           self.vehicle_global_position_callback,
-                                                                           qos_profile_sensor_data)
+        self.vehicle_global_position_subscriber = self.create_subscription(
+            VehicleGlobalPosition,
+            f'{topic_prefix_fmu}out/vehicle_global_position',
+            self.vehicle_global_position_callback,
+            qos_profile_sensor_data
+        )
         self.vehicle_global_position_msg_ = VehicleGlobalPosition()
 
-        timer_period_ocm = 0.1
-        self.timer_ocm_ = self.create_timer(timer_period_ocm, self.timer_ocm_callback)
-        
-        self.display_info = self.create_timer(timer_period_ocm, self.timer_display_info_callback)
+        self.timer_ocm_ = self.create_timer(
+            CONTROL_LOOP_PERIOD_S, self.timer_ocm_callback
+        )
+        self.display_info = self.create_timer(
+            CONTROL_LOOP_PERIOD_S, self.timer_display_info_callback
+        )
         self.info_count = 0
-        self.setpoint = [0, 0, 0]
+        self.setpoint = [0.0, 0.0, 0.0]
 
+        self.get_logger().info(
+            f"[dc] Controller ready: topic_prefix={topic_prefix_fmu}, "
+            f"loop={CONTROL_LOOP_PERIOD_S}s"
+        )
 
 
 def main(args=None):
     rclpy.init(args=args)
-
     drone_controller = DroneController()
-
     rclpy.spin(drone_controller)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     drone_controller.destroy_node()
     rclpy.shutdown()
 

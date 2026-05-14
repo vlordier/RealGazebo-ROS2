@@ -2,72 +2,85 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
 
 from geometry_msgs.msg import Twist
-from px4_msgs.msg import LogMessage, VehicleStatus, OffboardControlMode, TrajectorySetpoint, VehicleCommandAck, \
-    VehicleCommand, VehicleLocalPosition
-
 from std_msgs.msg import String
-import sys, select, termios, tty
+import sys
 
-msg = """
-a : arm
-o : offboard
-t : takeoff(only for drone)
-s : start misssion
-d : disarm
-"""
+from manager.constants import KEY_BINDINGS, USAGE_MESSAGE, MAIN_CMD_TOPIC_TEMPLATE
 
-settings = termios.tcgetattr(sys.stdin)
-keyBindings = {
-    'a': "ARM",
-    'o': "OFFBOARD",
-    't': "TAKEOFF",
-    "s": "START",
-    "d": "DISARM"
-}
 
-def getKey():
-    # tty.setraw(sys.stdin.fileno())
-    tty.setcbreak(sys.stdin.fileno())
-    select.select([sys.stdin], [], [], 0)
-    key = sys.stdin.read(1)
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-    return key
+def parse_vehicle_count(node: Node) -> int:
+    node.declare_parameter('vehicles', 0)
+    return node.get_parameter('vehicles').get_parameter_value().integer_value
+
+
+def parse_cmd_vel_flag(node: Node) -> bool:
+    node.declare_parameter('cmd_vel_needed', False)
+    return node.get_parameter('cmd_vel_needed').get_parameter_value().bool_value
+
 
 def main(args=None):
     rclpy.init()
     node = rclpy.create_node('px4_ros2_controller')
-    node.declare_parameter('vehicles', 0)
-    node.declare_parameter('cmd_vel_needed', False)
-    vehicles = node.get_parameter('vehicles').get_parameter_value().integer_value
-    cmd_vel_needed = node.get_parameter('cmd_vel_needed').get_parameter_value().bool_value
-    main_cmd_publisher_list = []
+
+    vehicles = parse_vehicle_count(node)
+    cmd_vel_needed = parse_cmd_vel_flag(node)
+    main_cmd_publishers = []
+
     if cmd_vel_needed:
         cmd_vel_publisher = node.create_publisher(Twist, "cmd_vel", 10)
+
     for i in range(1, vehicles + 1):
-        topic_prefix_manager_ = f"vehicle{i}/manager/"
-        main_cmd_publisher_list.append(node.create_publisher(String,
-                                                            f'{topic_prefix_manager_}in/main_cmd',
-                                                            10))
+        topic = MAIN_CMD_TOPIC_TEMPLATE.format(i=i)
+        main_cmd_publishers.append(
+            node.create_publisher(String, topic, 10)
+        )
+
+    node.get_logger().info(
+        f"[ctrl] Controller ready: {vehicles} vehicle(s), "
+        f"cmd_vel={'yes' if cmd_vel_needed else 'no'}"
+    )
+
     try:
-        print(msg)
-        print(f"{vehicles} vehicles in use")
-        print(f"publish /cmd_vel: {cmd_vel_needed}")
-        while(1):
-            key = getKey()
-            if key in keyBindings.keys():
+        print(USAGE_MESSAGE)
+        while True:
+            key = _read_key()
+            if not key:
+                continue
+            if key in KEY_BINDINGS:
+                cmd = KEY_BINDINGS[key]
+                node.get_logger().info(f"[ctrl] Key '{key}' -> {cmd}")
                 if cmd_vel_needed and key == 's':
-                    cmd_vel_msg = Twist()
-                    cmd_vel_msg.linear.x = 1.0
-                    cmd_vel_publisher.publish(cmd_vel_msg)
-                cmd_msg = String()
-                cmd_msg.data = keyBindings[key]
-                for i in main_cmd_publisher_list:
-                    i.publish(cmd_msg)
-            else:
-                if (key == '\x03'):
-                    break
+                    twist = Twist()
+                    twist.linear.x = 1.0
+                    cmd_vel_publisher.publish(twist)
+                msg = String()
+                msg.data = cmd
+                for pub in main_cmd_publishers:
+                    pub.publish(msg)
+            elif key == '\x03':
+                node.get_logger().info("[ctrl] Ctrl+C, shutting down")
+                break
     except Exception as e:
-        print(e)
+        node.get_logger().error(f"[ctrl] Error: {e}")
+
+
+def _read_key() -> str | None:
+    """Read a single keypress from stdin, or None if no key available."""
+    import select as _select
+    import termios as _termios
+    import tty as _tty
+    import sys as _sys
+    settings = _termios.tcgetattr(_sys.stdin)
+    try:
+        _tty.setcbreak(_sys.stdin.fileno())
+        if _select.select([_sys.stdin], [], [], 0)[0]:
+            return _sys.stdin.read(1)
+        return None
+    finally:
+        _termios.tcsetattr(_sys.stdin, _termios.TCSADRAIN, settings)
+
+
+if __name__ == '__main__':
+    main()
