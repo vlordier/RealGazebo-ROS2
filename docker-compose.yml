@@ -26,6 +26,7 @@ services:
     image: ${IMAGE:-realgazebo:base}
     container_name: gazebo
     hostname: gazebo
+    restart: unless-stopped
     privileged: true
     runtime: nvidia
     environment:
@@ -38,7 +39,8 @@ services:
       LOCAL_USER_ID: ${LOCAL_USER_ID:-1000}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - /dev:/dev
+      - /dev/dri:/dev/dri  # GPU access (NVIDIA handled by runtime: nvidia)
+      - gazebo-models:/tmp/models
     networks:
       gazebo-network:
         ipv4_address: 172.20.0.2
@@ -95,3 +97,6 @@ services:
       resources:
         limits:
           memory: 2G
+
+volumes:
+  gazebo-models:

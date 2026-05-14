@@ -2,9 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main, realgazebo-*]
+    branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly: Monday 6AM UTC — full build with PX4 + ArduPilot
   workflow_dispatch:
 
 env:
@@ -82,10 +84,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build base image with cache
+      - name: Determine Dockerfile
+        id: dockerfile
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "file=docker/Dockerfile" >> $GITHUB_OUTPUT
+          else
+            echo "file=docker/Dockerfile.base" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build image with cache
         uses: docker/build-push-action@v6
         with:
-          file: docker/Dockerfile.base
+          file: ${{ steps.dockerfile.outputs.file }}
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}:ci-${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository }}:ci-latest

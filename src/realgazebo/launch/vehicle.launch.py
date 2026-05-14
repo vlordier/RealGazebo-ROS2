@@ -148,6 +148,7 @@ def launch_setup(context, *args, **kwargs):
     unreal_port = LaunchConfiguration('unreal_port').perform(context)
     start_control_node = LaunchConfiguration('start_control_node').perform(context).lower() == 'true'
     vehicle_models_str = LaunchConfiguration('vehicle_models').perform(context)
+    skip_params = LaunchConfiguration('skip_params').perform(context).lower() == 'true'
 
     # Parse spawnpoint: "x,y,z,yaw"
     spawnpoint = [float(x.strip()) for x in spawnpoint_str.split(',')]
@@ -278,6 +279,7 @@ def launch_setup(context, *args, **kwargs):
         timed_actions.append(px4_process)
 
         # 5. PX4 parameter configuration (after PX4 starts)
+        #    Skip with skip_params:=true to preserve runtime changes across restarts
         px4_param_binary = f"{px4_path}/build/px4_sitl_default/bin/px4-param"
 
         param_commands = [
@@ -286,9 +288,10 @@ def launch_setup(context, *args, **kwargs):
             (px4_param_binary, '--instance', str(instance_id), 'set', 'COM_RC_IN_MODE', '4'),
         ]
 
-        for cmd in param_commands:
-            param_process = ExecuteProcess(cmd=list(cmd))
-            timed_actions.append(param_process)
+        if not skip_params:
+            for cmd in param_commands:
+                param_process = ExecuteProcess(cmd=list(cmd))
+                timed_actions.append(param_process)
 
     elif firmware == "ardupilot":
         ap_home = f"{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}"
@@ -489,6 +492,15 @@ def generate_launch_description():
             'vehicle_models',
             default_value='',
             description='Comma-separated list of Gazebo model names (e.g., x500_0,lc_62_1,boat_8)'
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'skip_params',
+            default_value='false',
+            description='Skip PX4 parameter reset (preserves runtime changes across restarts)',
+            choices=['true', 'false']
         )
     )
 

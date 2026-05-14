@@ -197,6 +197,22 @@ class TestMultiVehicleCompose(unittest.TestCase):
         cmd = self.compose['services']['vehicle_0']['command']
         self.assertIn('spawnpoint:=', cmd)
 
+    def test_restart_unless_stopped(self):
+        """All vehicle services have restart: unless-stopped."""
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            self.assertEqual(svc.get('restart'), 'unless-stopped',
+                             f'{sname} missing restart policy')
+
+    def test_logging_prefix_in_command(self):
+        """Vehicle commands include [vehicle_N] log prefix."""
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            cmd = svc['command']
+            self.assertIn('[vehicle_', cmd, f'{sname} missing logging prefix')
+
     def test_v2v_vehicle_models_all_vehicles(self):
         """Every vehicle's command lists all other vehicles in vehicle_models."""
         models_by_vehicle = {}

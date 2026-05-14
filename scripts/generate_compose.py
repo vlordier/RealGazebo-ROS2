@@ -236,7 +236,8 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                 'retries': 10,
                 'start_period': '120s',
             },
-            'command': f'bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
+            'restart': 'unless-stopped',
+            'command': f'bash -c "exec > >(sed \\\"s/^/[vehicle_{vid}] /\\\") 2>&1; source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
             'deploy': {
                 'resources': {
                     'limits': {
