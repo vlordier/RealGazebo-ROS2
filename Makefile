@@ -69,9 +69,10 @@ push:                  ## Push Docker image to registry
 	docker tag realgazebo:base ghcr.io/vlordier/realgazebo:latest
 	docker push ghcr.io/vlordier/realgazebo:latest
 
-clean:                 ## Remove build artifacts
+clean:                 ## Remove all build artifacts + dangling Docker images
 	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache -o -name .mypy_cache \) -exec rm -rf {} + 2>/dev/null
 	@find . -name "*.pyc" -delete
+	@docker system prune -f --all --volumes 2>/dev/null || true
 	@echo "Cleaned"
 
 # ── Help ──────────────────────────────────────────────────────────────────

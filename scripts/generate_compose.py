@@ -3,17 +3,14 @@
 Generate docker-compose.override.yml from existing RealGazebo YAML configuration.
 
 ########################################################################################
-#  DO NOT RUN THIS SCRIPT DIRECTLY!                                                    #
-#  Use start_compose_simulation.sh instead:                                            #
+#  USE THE QUICKSTART SCRIPT INSTEAD:                                                 #
 #                                                                                      #
-#    ./scripts/start_compose_simulation.sh src/realgazebo/yaml/example.yaml            #
-#    ./scripts/start_compose_simulation.sh src/realgazebo/yaml/example.yaml --gui      #
+#    bash scripts/quickstart.sh                                                        #
 #                                                                                      #
 ########################################################################################
 
-This script is called internally by start_compose_simulation.sh.
-It reads the existing vehicle YAML format (same as vehicle.launch.py)
-and generates docker-compose.override.yml with vehicle services and networks.
+This script generates docker-compose.override.yml with vehicle services and networks.
+It is called by quickstart.sh or can be used directly.
 """
 
 import argparse
@@ -142,7 +139,8 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     #     build_target: 0
     #     spawnpoint: (x, y, z, yaw)
 
-    config.get('build_targets', {})
+    # Resolve build_targets map: target_id -> filesystem path
+    build_targets = config.get('build_targets', {}) or {}
     vehicles = config.get('vehicles', {})
 
     # Obstacles are not included in vehicle containers (they spawn in gazebo)
@@ -181,6 +179,11 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
 
         # Create vehicle service
         v_firmware = vehicle.get('firmware', 'px4')
+
+        # Resolve build_target to filesystem path
+        v_build_target = vehicle.get('build_target', 0)
+        px4_path = build_targets.get(v_build_target, '/home/user/realgazebo/RealGazebo-PX4')
+
         env_vars = [
             'DISPLAY=${DISPLAY:-:0}',
             'QT_X11_NO_MITSHM=1',
@@ -197,7 +200,9 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
             'image': image,
             'container_name': service_name,
             'hostname': service_name,
-            'privileged': True,
+            'privileged': True,  # Required for TC qdisc/netem in V2V simulation.
+                                 # For deployments without V2V, replace with:
+                                 #   cap_add: [NET_ADMIN, SYS_ADMIN]
             'environment': env_vars,
             'volumes': [
                 '/tmp/.X11-unix:/tmp/.X11-unix',
@@ -221,7 +226,17 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
                     'condition': 'service_healthy'
                 }
             },
-            'command': f'bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:=/home/user/realgazebo/RealGazebo-PX4 unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
+            'healthcheck': {
+                'test': [
+                    'CMD-SHELL',
+                    f'source /opt/ros/jazzy/setup.bash && timeout 5 ros2 topic list 2>/dev/null | grep -q /clock || exit 1'
+                ],
+                'interval': '15s',
+                'timeout': '10s',
+                'retries': 10,
+                'start_period': '120s',
+            },
+            'command': f'bash -c "source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && ros2 launch realgazebo vehicle.launch.py instance_id:={vid} vehicle_type:={vtype} firmware:={v_firmware} spawnpoint:={spawnpoint_str} px4_path:={px4_path} unreal_ip:={unreal_ip} unreal_port:={unreal_port} vehicle_models:={vehicle_models_str}"',
             'deploy': {
                 'resources': {
                     'limits': {

@@ -34,11 +34,11 @@ private:
   double baseline_jitter_ms_;
 
   // Speed of light (m/s)
-  static constexpr double SPEED_OF_LIGHT = 3.0e8;
+  static constexpr double SPEED_OF_LIGHT = 3.0e8;          // m/s
 
-  // RSSI thresholds for packet loss rate
-  static constexpr double RSSI_EXCELLENT = -60.0;  // 0% PLR
-  static constexpr double RSSI_POOR = -90.0;       // 100% PLR
+  // RSSI thresholds for packet loss rate (dBm)
+  static constexpr double RSSI_EXCELLENT = -60.0;           // dBm — 0% PLR
+  static constexpr double RSSI_POOR = -90.0;                // dBm — 100% PLR
 };
 
 }  // namespace network_sim

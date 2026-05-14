@@ -253,6 +253,77 @@ class TestMultiVehicleCompose(unittest.TestCase):
                 self.assertGreaterEqual(udp_port, 18570)
                 self.assertLessEqual(udp_port, 18579)
 
+    def test_px4_path_resolved_from_build_targets(self):
+        """Vehicle px4_path comes from build_targets config, not hardcoded."""
+        import re
+        cmd = self.compose['services']['vehicle_0']['command']
+        # px4_path should be the resolved path from build_targets[0]
+        m = re.search(r'px4_path:=(\S+)', cmd)
+        self.assertIsNotNone(m, 'px4_path not found in command')
+        # Default in example.yaml is /home/user/realgazebo/RealGazebo-PX4
+        self.assertEqual(m.group(1), '/home/user/realgazebo/RealGazebo-PX4')
+
+
+class TestSdfTemplateValidation(unittest.TestCase):
+    """Validate that all SDF Jinja templates render to well-formed XML."""
+
+    def setUp(self):  # noqa: D102
+        import xml.etree.ElementTree as ET
+        from jinja2 import Environment, FileSystemLoader
+        self.ET = ET
+        self.models_dir = os.path.join(
+            os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'models'
+        )
+        self.env = Environment(loader=FileSystemLoader(self.models_dir))
+
+    def _render_and_validate(self, template_name, firmware='px4'):
+        template = self.env.get_template(template_name)
+        output = template.render(unreal_ip='127.0.0.1', unreal_port='5005', firmware=firmware)
+        root = self.ET.fromstring(output)
+        self.assertIsNotNone(root)
+        self.assertEqual(root.tag, 'sdf')
+        return output
+
+    def test_x500_renders_valid_xml(self):
+        """x500 SDF template renders to valid XML."""
+        self._render_and_validate('x500.sdf.jinja')
+
+    def test_x500_lidar_2d_renders_valid_xml(self):
+        """x500_lidar_2d SDF template renders to valid XML."""
+        self._render_and_validate('x500_lidar_2d.sdf.jinja')
+
+    def test_rover_ackermann_renders_valid_xml(self):
+        """rover_ackermann SDF template renders to valid XML."""
+        self._render_and_validate('rover_ackermann.sdf.jinja')
+
+    def test_boat_renders_valid_xml(self):
+        """boat SDF template renders to valid XML."""
+        self._render_and_validate('boat.sdf.jinja')
+
+    def test_lc_62_renders_valid_xml(self):
+        """lc_62 SDF template renders to valid XML."""
+        self._render_and_validate('lc_62.sdf.jinja')
+
+    def test_rock_renders_valid_xml(self):
+        """rock SDF template renders to valid XML."""
+        self._render_and_validate('rock/rock.sdf.jinja')
+
+    def test_x500_ardupilot_renders_valid_xml(self):
+        """x500 with ardupilot firmware renders to valid XML."""
+        self._render_and_validate('x500.sdf.jinja', firmware='ardupilot')
+
+    def test_rover_ackermann_ardupilot_renders_valid_xml(self):
+        """rover_ackermann with ardupilot firmware renders to valid XML."""
+        self._render_and_validate('rover_ackermann.sdf.jinja', firmware='ardupilot')
+
+    def test_boat_ardupilot_renders_valid_xml(self):
+        """boat with ardupilot firmware renders to valid XML."""
+        self._render_and_validate('boat.sdf.jinja', firmware='ardupilot')
+
+    def test_x500_jsbsim_renders_valid_xml(self):
+        """x500 with jsbsim firmware renders to valid XML (px4 fallthrough)."""
+        self._render_and_validate('x500.sdf.jinja', firmware='jsbsim')
+
 
 class TestMultiVehicleIntegration(unittest.TestCase):
     """Integration tests that require Docker + running stack.

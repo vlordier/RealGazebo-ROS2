@@ -131,7 +131,6 @@ class TestGenerateCompose(unittest.TestCase):
 
     def test_empty_config_raises(self):
         """Empty or missing YAML content raises."""
-        import json
         path = os.path.join(tempfile.mkdtemp(), "empty.yaml")
         with open(path, "w") as f:
             f.write("")
