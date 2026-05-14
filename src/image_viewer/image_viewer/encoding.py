@@ -1,10 +1,12 @@
 """Image encoding configuration for image_viewer.
 
-Safe to import without OpenCV. Defines the channel count per encoding;
-the actual cv2 conversion constants are resolved at runtime.
+Maps ROS image encodings to (channel_count, cv2_conversion_flag).
+Both cv2 and its constants are required at import time — this is
+intentional: if cv2 isn't available, the user gets a clear ImportError
+at startup rather than a silent fallback at runtime.
 """
 
-from typing import Optional
+import cv2
 
 # ── Timing Constants ────────────────────────────────────────────────────────
 
@@ -20,20 +22,12 @@ MONO_CHANNEL_COUNT = 1
 
 # ── Encoding Map ─────────────────────────────────────────────────────────────
 
-# Maps ROS image encoding string to (channel_count, cv2_conversion_name)
-# conversion_name=None means "already BGR, no conversion needed"
-ENCODING_CONFIG: dict[str, tuple[int, str | None]] = {
-    'rgb8':  (RGB_CHANNEL_COUNT, 'COLOR_RGB2BGR'),
+# (channel_count, cv2_color_conversion_flag | None)
+# None means "already BGR, no conversion needed"
+ENCODING_CONFIG: dict[str, tuple[int, int | None]] = {
+    'rgb8':  (RGB_CHANNEL_COUNT, cv2.COLOR_RGB2BGR),
     'bgr8':  (RGB_CHANNEL_COUNT, None),
-    'rgba8': (RGBA_CHANNEL_COUNT, 'COLOR_RGBA2BGR'),
-    'bgra8': (RGBA_CHANNEL_COUNT, 'COLOR_BGRA2BGR'),
+    'rgba8': (RGBA_CHANNEL_COUNT, cv2.COLOR_RGBA2BGR),
+    'bgra8': (RGBA_CHANNEL_COUNT, cv2.COLOR_BGRA2BGR),
     'mono8': (MONO_CHANNEL_COUNT, None),
 }
-
-
-def resolve_conversion(name: str | None):
-    """Resolve a cv2 conversion constant name to its int value."""
-    if name is None:
-        return None
-    import cv2
-    return getattr(cv2, name)

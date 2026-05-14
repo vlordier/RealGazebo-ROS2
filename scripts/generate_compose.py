@@ -21,6 +21,16 @@ import os
 import ast
 import yaml
 import argparse
+from pydantic import BaseModel, Field
+
+
+class VehicleEntry(BaseModel):
+    """Validated vehicle entry from YAML configuration.
+    Fails fast on invalid config — better than cryptic Docker errors later.
+    """
+    type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
+    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot)$")
+    build_target: int = Field(default=0, ge=0)
 
 
 def parse_args():
@@ -68,26 +78,13 @@ def parse_args():
 
 
 def load_config(config_path):
-    """Load vehicle configuration from YAML file (existing format)"""
+    """Load and validate vehicle configuration from YAML file."""
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
-    # Optional Pydantic validation (improves error messages on bad configs)
-    try:
-        from pydantic import BaseModel, Field, field_validator
-
-        class VehicleEntry(BaseModel):
-            type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
-            firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot)$")
-            build_target: int = Field(default=0, ge=0)
-
-        vehicles = config.get('vehicles', {})
-        for vid, v in vehicles.items():
-            VehicleEntry(**v)
-    except ImportError:
-        pass  # Pydantic not available, skip validation
-    except Exception as e:
-        print(f"Warning: Config validation error for vehicle {vid}: {e}")
+    vehicles = config.get('vehicles', {})
+    for vid, v in vehicles.items():
+        VehicleEntry(**v)  # validates; raises on bad config
 
     return config
 

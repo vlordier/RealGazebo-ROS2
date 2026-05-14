@@ -15,7 +15,6 @@ from image_viewer.encoding import (
     LIFECYCLE_SERVICE_TIMEOUT_S,
     GET_STATE_TIMEOUT_S,
     OPENCV_WAITKEY_MS,
-    resolve_conversion,
 )
 
 
@@ -81,10 +80,9 @@ class ImageSubscriber(Node):
 
     def listener_callback(self, msg):
         try:
-            channels, conversion_name = ENCODING_CONFIG.get(
+            channels, conversion = ENCODING_CONFIG.get(
                 msg.encoding, (RGB_CHANNEL_COUNT, None)
             )
-            conversion = resolve_conversion(conversion_name)
 
             frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(
                 (msg.height, msg.width, channels)
