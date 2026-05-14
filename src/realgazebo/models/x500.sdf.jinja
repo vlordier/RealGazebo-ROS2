@@ -9,6 +9,7 @@
       <instance_id>{{ unreal_port }}</instance_id>
     </plugin>
 {% else %}
+    {# PX4 and JSBSim both use individual motor plugins — JSBSim FDM runs externally #}
     <plugin filename="gz-sim-multicopter-motor-model-system"
       name="gz::sim::systems::MulticopterMotorModel">
       <jointName>rotor_0_joint</jointName>

@@ -232,7 +232,7 @@
       </collision>
     </link>
     <link name="rover_ackermann/FrontLeftWheelSteering">
-      <pose relative_to="servo_0 ">0 0 0 0 0 0</pose>
+      <pose relative_to="servo_0">0 0 0 0 0 0</pose>
       <inertial>
         <mass>0.005</mass>
         <inertia>
@@ -341,7 +341,7 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
-    <joint name="servo_0 " type="revolute">
+    <joint name="servo_0" type="revolute">
       <parent>base_link</parent>
       <child>rover_ackermann/FrontLeftWheelSteering</child>
       <pose relative_to="base_link">.120 .1 0 0 0 0</pose>
@@ -377,7 +377,7 @@
     <joint name="rover_ackermann/FrontLeftWheelJoint" type="revolute">
       <parent>rover_ackermann/FrontLeftWheelSteering</parent>
       <child>rover_ackermann/FrontLeftWheel</child>
-      <pose relative_to="servo_0 ">0 0 0 0 0 0</pose>
+      <pose relative_to="servo_0">0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>

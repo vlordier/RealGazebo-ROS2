@@ -32,6 +32,7 @@ def launch_setup(context, *args, **kwargs):
     px4_path = LaunchConfiguration('px4_path').perform(context)
     unreal_ip = LaunchConfiguration('unreal_ip').perform(context)
     unreal_port = LaunchConfiguration('unreal_port').perform(context)
+    firmware = LaunchConfiguration('firmware').perform(context)
 
     gazebo_path = f"{px4_path}/Tools/simulation/gz"
 
@@ -79,7 +80,7 @@ def launch_setup(context, *args, **kwargs):
         env = Environment(loader=FileSystemLoader(os.path.join(current_package_path, 'models')))
         template_name = f'{model_type}.sdf.jinja' if model_type not in support_obstacle else f'{model_type}/{model_type}.sdf.jinja'
         model = env.get_template(template_name)
-        output_model = model.render(unreal_ip=unreal_ip, unreal_port=unreal_port)
+        output_model = model.render(unreal_ip=unreal_ip, unreal_port=unreal_port, firmware=firmware)
         model_file_path = os.path.join(model_save_dir, f'{model_type}.sdf')
         with open(model_file_path, 'w') as f:
             f.write(output_model)
@@ -168,6 +169,15 @@ def generate_launch_description():
             'unreal_port',
             default_value='5005',
             description='Port of Unreal Engine server'
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'firmware',
+            default_value='px4',
+            description='Default firmware for template rendering',
+            choices=['px4', 'ardupilot', 'jsbsim']
         )
     )
 

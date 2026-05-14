@@ -59,8 +59,8 @@ def parse_args():
     )
     parser.add_argument(
         '--image',
-        default='aware4docker/realgazebo:1.2',
-        help='Docker image tag (default: aware4docker/realgazebo:1.2)'
+        default='realgazebo:base',
+        help='Docker image tag (default: realgazebo:base)'
     )
     parser.add_argument(
         '--world',
@@ -156,6 +156,8 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
         spawnpoint_str = ','.join(map(str, spawnpoint))
 
         # Vehicle IPs on each network
+        # Gazebo network: 172.20.0.{10+vid} (max ~245 vehicles per /24)
+        # Vehicle network: 172.30.0.{10+vid} (same limit)
         vehicle_gazebo_ip = f'172.20.0.{10 + vid}'
         vehicle_network_ip = f'172.30.0.{10 + vid}'
 

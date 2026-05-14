@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'
 
 
 VALID_VEHICLE_TYPES = ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "rock"]
-VALID_FIRMWARES = ["px4", "ardupilot"]
+VALID_FIRMWARES = ["px4", "ardupilot", "jsbsim"]
 
 
 class TestGenerateCompose(unittest.TestCase):
@@ -55,10 +55,26 @@ class TestGenerateCompose(unittest.TestCase):
         self.assertEqual(len(config["vehicles"]), len(vehicles))
 
     def test_ardupilot_firmware(self):
-        vehicles = {0: {"type": "x500", "firmware": "ardupilot", "build_target": 0, "spawnpoint": (0, 0, 0, 0)}}
+        vehicles = {
+            0: {
+                "type": "x500", "firmware": "ardupilot",
+                "build_target": 0, "spawnpoint": (0, 0, 0, 0),
+            }
+        }
         path, _ = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(config["vehicles"][0]["firmware"], "ardupilot")
+
+    def test_jsbsim_firmware(self):
+        vehicles = {
+            0: {
+                "type": "x500", "firmware": "jsbsim",
+                "build_target": 0, "spawnpoint": (0, 0, 0, 0),
+            }
+        }
+        path, _ = self._make_config(vehicles)
+        config = self.load_config(path)
+        self.assertEqual(config["vehicles"][0]["firmware"], "jsbsim")
 
     def test_invalid_vehicle_type_raises(self):
         vehicles = {0: {"type": "spaceship", "build_target": 0}}

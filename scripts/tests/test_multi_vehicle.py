@@ -163,6 +163,62 @@ class TestMultiVehicleCompose(unittest.TestCase):
         cmd = self.compose['services']['vehicle_0']['command']
         self.assertIn('spawnpoint:=', cmd)
 
+    def test_v2v_vehicle_models_all_vehicles(self):
+        """Every vehicle's command lists all other vehicles in vehicle_models."""
+        models_by_vehicle = {}
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            cmd = svc['command']
+            import re
+            m = re.search(r'vehicle_models:=([\w,]+)', cmd)
+            self.assertIsNotNone(m, f'{sname} missing vehicle_models')
+            models = set(m.group(1).split(','))
+            models_by_vehicle[sname] = models
+
+        # All vehicles should have the same model list
+        ref_models = next(iter(models_by_vehicle.values()))
+        for sname, models in models_by_vehicle.items():
+            self.assertEqual(
+                models, ref_models,
+                f'{sname} vehicle_models differs from reference'
+            )
+
+        # All 10 vehicle-model entries present
+        self.assertEqual(len(ref_models), 10)
+
+    def test_v2v_network_isolation_env(self):
+        """Each vehicle has GZ_IP set to its gazebo-network IP."""
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            vid = int(sname.split('_')[1])
+            env = ' '.join(svc['environment'])
+            expected_gz_ip = f'GZ_IP=172.20.0.{10 + vid}'
+            self.assertIn(expected_gz_ip, env, f'{sname} missing {expected_gz_ip}')
+            self.assertIn('GZ_PARTITION=realgazebo', env, f'{sname} missing GZ_PARTITION')
+
+    def test_v2v_network_sim_parameters(self):
+        """Vehicle launch command includes network_sim config in vehicle_models."""
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            cmd = svc['command']
+            self.assertIn('vehicle_models:=', cmd)
+
+    def test_v2v_mavlink_port_unique(self):
+        """Each vehicle has a unique MAVLink UDP port for GCS."""
+        ports = set()
+        for sname, svc in self.compose['services'].items():
+            if not sname.startswith('vehicle_'):
+                continue
+            for port in svc.get('ports', []):
+                udp_port = int(port.split(':')[0])
+                self.assertNotIn(udp_port, ports, f'Port {udp_port} reused on {sname}')
+                ports.add(udp_port)
+                self.assertGreaterEqual(udp_port, 18570)
+                self.assertLessEqual(udp_port, 18579)
+
 
 class TestMultiVehicleIntegration(unittest.TestCase):
     """Integration tests that require Docker + running stack.

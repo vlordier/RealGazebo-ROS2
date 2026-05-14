@@ -21,8 +21,9 @@ down:                  ## Stop all containers
 
 test:                  ## Run all Python tests (works without Docker)
 	@echo "=== Running tests ==="
-	@python3 -m pytest scripts/tests/ realgazebo-dora/test/ src/jsbsim_bridge/test/ -v --timeout=60 2>&1 | tail -3 || \
-	 python3 -m unittest discover -s scripts/tests -v -t . 2>&1 | tail -1
+	@python3 -c "import sys; exit(0 if sys.version_info >= (3,10) else 1)" && \
+	 python3 -m pytest scripts/tests/ realgazebo-dora/test/ src/jsbsim_bridge/test/ -v --timeout=60 -m "not integration" 2>&1 | tail -3 || \
+	 python3 -m pytest scripts/tests/ -v --timeout=60 -m "not integration" 2>&1 | tail -3
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
 	@echo "=== Smoke test ==="
