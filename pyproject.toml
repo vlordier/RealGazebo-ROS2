@@ -60,3 +60,6 @@ testpaths = [
 ]
 python_files = ["test_*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "integration: tests that require Docker and a running simulation stack",
+]

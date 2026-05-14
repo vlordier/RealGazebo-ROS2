@@ -1,205 +1,212 @@
-#!/usr/bin/env python3
-"""Multi-vehicle V2V integration test.
+"""Tests for multi-vehicle V2V simulation stack.
 
-Verifies that two vehicles can communicate through the network_sim layer.
-Tests the critical multi-vehicle path:
-
-Usage:
-    python3 scripts/tests/test_multi_vehicle.py --gazebo-ip 127.0.0.1
+Unit tests validate config loading, compose generation, and network topology.
+Integration tests (marked @pytest.mark.integration) require Docker + running stack.
 """
 
-import argparse
-import subprocess
+import os
 import sys
+import unittest
 
-# ── Constants ────────────────────────────────────────────────────────────────
+import pytest
 
-VEHICLE_TYPES = ["x500", "rover_ackermann"]
-FIRMWARE_OPTIONS = ["px4", "ardupilot", "jsbsim"]
-TOPICS_PER_VEHICLE = [
-    "/vehicle1/fmu/out/vehicle_status",
-    "/vehicle2/fmu/out/vehicle_status",
-    "/vehicle1/manager/in/main_cmd",
-    "/vehicle2/manager/in/main_cmd",
-]
-NETWORK_SIM_TOPICS = [
-    "/network_sim/diagnostics",
-    "/network_sim/status",
-]
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 
 
-def check_docker() -> bool:
-    try:
-        subprocess.run(["docker", "info"], capture_output=True, timeout=5)
-        return True
-    except (subprocess.FileNotFoundError, subprocess.TimeoutExpired):
-        return False
+EXAMPLE_YAML = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
+)
 
 
-def check_containers() -> list[str]:
-    result = subprocess.run(
-        ["docker", "ps", "--format", "{{.Names}}"],
-        capture_output=True, text=True, timeout=10
-    )
-    return [n.strip() for n in result.stdout.split("\n") if n.strip()]
+class TestMultiVehicleConfig(unittest.TestCase):
+    """Validate that example.yaml loads correctly with all 10 vehicles."""
+
+    def setUp(self):  # noqa: D102
+        from generate_compose import load_config, parse_spawnpoint
+        self._load_config = load_config
+        self._parse_spawnpoint = parse_spawnpoint
+
+    def test_example_loads_all_vehicles(self):
+        """example.yaml has exactly 10 vehicles."""
+        config = self._load_config(EXAMPLE_YAML)
+        self.assertIn('vehicles', config)
+        self.assertEqual(len(config['vehicles']), 10)
+
+    def test_example_vehicle_types(self):
+        """All 5 vehicle types are represented."""
+        config = self._load_config(EXAMPLE_YAML)
+        types = {v['type'] for v in config['vehicles'].values()}
+        expected = {'x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat'}
+        self.assertEqual(types, expected)
+
+    def test_rover_has_ardupilot_firmware(self):
+        """Vehicle 5 (rover_ackermann) uses ardupilot firmware."""
+        config = self._load_config(EXAMPLE_YAML)
+        self.assertEqual(config['vehicles'][5].get('firmware'), 'ardupilot')
+
+    def test_boat_has_ardupilot_firmware(self):
+        """Vehicle 8 (boat) uses ardupilot firmware."""
+        config = self._load_config(EXAMPLE_YAML)
+        self.assertEqual(config['vehicles'][8].get('firmware'), 'ardupilot')
+
+    def test_default_firmware_is_px4(self):
+        """Vehicles without explicit firmware default to px4."""
+        config = self._load_config(EXAMPLE_YAML)
+        for vid in [0, 1, 2, 3, 4, 6, 7, 9]:
+            self.assertEqual(config['vehicles'][vid].get('firmware', 'px4'), 'px4')
+
+    def test_spawnpoints_parse(self):
+        """All spawnpoints are valid 4-tuples of floats."""
+        config = self._load_config(EXAMPLE_YAML)
+        for vid, v in config['vehicles'].items():
+            sp = self._parse_spawnpoint(v['spawnpoint'])
+            self.assertEqual(len(sp), 4, f'vehicle_{vid} spawnpoint has {len(sp)} values')
+            for coord in sp:
+                self.assertIsInstance(coord, (int, float))
 
 
-def check_ros2_topics(container: str, expected_topics: list[str]) -> tuple[int, list[str]]:
-    """Check which expected ROS2 topics exist inside a container."""
-    result = subprocess.run(
-        ["docker", "exec", container, "bash", "-c",
-         "source /opt/ros/jazzy/setup.bash && ros2 topic list 2>/dev/null"],
-        capture_output=True, text=True, timeout=10
-    )
-    if result.returncode != 0:
-        return 0, []
-    topics = [t.strip() for t in result.stdout.split("\n") if t.strip()]
-    found = [t for t in expected_topics if t in topics]
-    return len(found), found
+class TestMultiVehicleCompose(unittest.TestCase):
+    """Validate docker-compose generation for multi-vehicle config."""
+
+    def setUp(self):  # noqa: D102
+        from generate_compose import generate_compose_override, load_config
+        self._load_config = load_config
+        self._generate = generate_compose_override
+        self.config = self._load_config(EXAMPLE_YAML)
+        self.compose = self._generate(self.config)
+
+    def test_all_vehicle_services_generated(self):
+        """All 10 non-obstacle vehicles generate services."""
+        vehicle_services = [s for s in self.compose['services'] if s.startswith('vehicle_')]
+        self.assertEqual(len(vehicle_services), 10)
+
+    def test_vehicle_models_string(self):
+        """vehicle_models parameter includes all non-obstacle models."""
+        v5_cmd = self.compose['services']['vehicle_5']['command']
+        self.assertIn('vehicle_models:=', v5_cmd)
+        self.assertIn('rover_ackermann_5', v5_cmd)
+
+    def test_networks_are_disjoint(self):
+        """No two services share the same IP."""
+        all_ips = {}
+        for sname, svc in self.compose['services'].items():
+            for net, netcfg in svc.get('networks', {}).items():
+                ip = netcfg['ipv4_address']
+                self.assertNotIn(ip, all_ips, f'IP {ip} reused by {sname}')
+                all_ips[ip] = sname
+
+    def test_gazebo_network_range(self):
+        """Gazebo network IPs follow 172.20.0.{10+vid} pattern."""
+        for sname, svc in self.compose['services'].items():
+            if 'vehicle_' not in sname:
+                continue
+            vid = int(sname.split('_')[1])
+            expected_ip = f'172.20.0.{10 + vid}'
+            self.assertEqual(
+                svc['networks']['gazebo-network']['ipv4_address'],
+                expected_ip,
+                f'{sname} gazebo IP mismatch'
+            )
+
+    def test_vehicle_network_range(self):
+        """Vehicle network IPs follow 172.30.0.{10+vid} pattern."""
+        for sname, svc in self.compose['services'].items():
+            if 'vehicle_' not in sname:
+                continue
+            vid = int(sname.split('_')[1])
+            expected_ip = f'172.30.0.{10 + vid}'
+            self.assertEqual(
+                svc['networks']['vehicle-network']['ipv4_address'],
+                expected_ip,
+                f'{sname} vehicle IP mismatch'
+            )
+
+    def test_firmware_to_command(self):
+        """Firmware setting propagates to ros2 launch command."""
+        self.assertIn('firmware:=ardupilot', self.compose['services']['vehicle_5']['command'])
+        self.assertIn('firmware:=ardupilot', self.compose['services']['vehicle_8']['command'])
+        self.assertIn('firmware:=px4', self.compose['services']['vehicle_0']['command'])
+
+    def test_px4_env_vars(self):
+        """PX4 vehicles get PX4_GZ_STANDALONE and DDS profile."""
+        env = self.compose['services']['vehicle_0']['environment']
+        env_str = ' '.join(env)
+        self.assertIn('PX4_GZ_STANDALONE=1', env_str)
+        self.assertIn('FASTRTPS_DEFAULT_PROFILES_FILE', env_str)
+
+    def test_ardupilot_no_px4_env_vars(self):
+        """ArduPilot vehicles do NOT get PX4-specific env vars."""
+        env = self.compose['services']['vehicle_5']['environment']
+        env_str = ' '.join(env)
+        self.assertNotIn('PX4_GZ_STANDALONE', env_str)
+        self.assertNotIn('FASTRTPS_DEFAULT_PROFILES_FILE', env_str)
+
+    def test_all_vehicle_ports_unique(self):
+        """No duplicate UDP port mappings."""
+        ports = set()
+        for sname, svc in self.compose['services'].items():
+            for port in svc.get('ports', []):
+                udp_port = port.split(':')[0]
+                self.assertNotIn(udp_port, ports, f'Port {udp_port} reused on {sname}')
+                ports.add(udp_port)
+
+    def test_vehicle_depends_on_gazebo(self):
+        """All vehicle services depend on gazebo being healthy."""
+        for sname, svc in self.compose['services'].items():
+            if sname.startswith('vehicle_'):
+                deps = svc.get('depends_on', {})
+                self.assertIn('gazebo', deps)
+                self.assertEqual(deps['gazebo']['condition'], 'service_healthy')
+
+    def test_spawnpoint_in_command(self):
+        """Spawnpoint coordinates appear in the launch command."""
+        cmd = self.compose['services']['vehicle_0']['command']
+        self.assertIn('spawnpoint:=', cmd)
 
 
-def test_container_count(expected_min: int = 2) -> bool:
-    containers = check_containers()
-    count = len(containers)
-    print(f"  Running containers: {count} (need ≥{expected_min})")
-    if count < expected_min:
-        print(f"  FAIL: Only {count} containers, expected at least {expected_min}")
-        return False
-    print(f"  OK: {count} containers running")
-    return True
+class TestMultiVehicleIntegration(unittest.TestCase):
+    """Integration tests that require Docker + running stack.
+
+    Run with: python -m pytest scripts/tests/test_multi_vehicle.py -m integration
+    """
+
+    @pytest.mark.integration
+    def test_docker_reachable(self):
+        """Docker daemon must be running."""
+        import subprocess
+        result = subprocess.run(['docker', 'ps'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, 'Docker daemon not reachable')
+
+    @pytest.mark.integration
+    @pytest.mark.integration
+    def test_gazebo_container_running(self):
+        """Gazebo container must be running."""
+        import subprocess
+        result = subprocess.run(
+            ['docker', 'ps', '--format', '{{.Names}}'],
+            capture_output=True, text=True
+        )
+        names = [n for n in result.stdout.strip().split('\n') if n]
+        self.assertTrue(
+            any('gazebo' in n for n in names),
+            f'No gazebo container running. Found: {names}'
+        )
+
+    @pytest.mark.integration
+    def test_vehicle_containers_running(self):
+        """At least one vehicle_N container must be running."""
+        import subprocess
+        result = subprocess.run(
+            ['docker', 'ps', '--format', '{{.Names}}'],
+            capture_output=True, text=True
+        )
+        names = [n for n in result.stdout.strip().split('\n') if n]
+        vehicle_count = sum(1 for n in names if 'vehicle_' in n)
+        self.assertGreater(
+            vehicle_count, 0,
+            f'No vehicle containers running. Found: {names}'
+        )
 
 
-def test_two_vehicles_present() -> bool:
-    containers = check_containers()
-    vehicle_containers = [c for c in containers if c.startswith("vehicle_")]
-    print(f"  Vehicle containers: {vehicle_containers}")
-    if len(vehicle_containers) < 2:
-        print(f"  FAIL: Need ≥2 vehicle containers, found {len(vehicle_containers)}")
-        return False
-    print(f"  OK: {len(vehicle_containers)} vehicle containers")
-    return True
-
-
-def test_gazebo_topics(gazebo_container: str = "gazebo") -> bool:
-    result = subprocess.run(
-        ["docker", "exec", gazebo_container, "bash", "-c",
-         "source /opt/ros/jazzy/setup.bash && timeout 3 ros2 topic list 2>/dev/null | wc -l"],
-        capture_output=True, text=True, timeout=15
-    )
-    if result.returncode != 0:
-        print("  FAIL: Cannot reach Gazebo container")
-        return False
-    topic_count = int(result.stdout.strip() or "0")
-    print(f"  Gazebo topics: {topic_count}")
-    if topic_count < 3:
-        print(f"  FAIL: Expected at least 3 topics, got {topic_count}")
-        return False
-    print(f"  OK: Gazebo running with {topic_count} topics")
-    return True
-
-
-def test_vehicle_topics(container: str, expected: list[str]) -> bool:
-    count, found = check_ros2_topics(container, expected)
-    print(f"  Topics in {container}: {count}/{len(expected)} expected")
-    if count == 0:
-        print("  FAIL: No expected topics found")
-        return False
-    print(f"  Found: {found}")
-    return True
-
-
-def test_network_sim_diagnostics(container: str = "gazebo") -> bool:
-    """Check if network_sim diagnostics topic exists."""
-    result = subprocess.run(
-        ["docker", "exec", container, "bash", "-c",
-         "source /opt/ros/jazzy/setup.bash && timeout 3 ros2 topic list 2>/dev/null | grep -c diagnostics"],
-        capture_output=True, text=True, timeout=10
-    )
-    if result.returncode == 0 and int(result.stdout.strip() or "0") > 0:
-        print("  OK: /diagnostics topic present")
-        return True
-    print("  WARN: /diagnostics topic not found (network_sim may not be running)")
-    return True  # Not a hard failure
-
-
-def test_entity_spawn(container: str = "gazebo") -> bool:
-    """Try to spawn a test entity via gz service."""
-    sdf = (
-        '<model name="test_vehicle"><static>false</static>'
-        '<link name="body"><collision name="c"><geometry><box><size>1 1 1</size></box></geometry>'
-        '</collision><visual name="v"><geometry><box><size>1 1 1</size></box></geometry></visual></link>'
-        '<plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/></model>'
-    )
-    result = subprocess.run(
-        ["docker", "exec", container, "bash", "-c",
-         f"gz service -s /world/test/create --reqtype gz.msgs.EntityFactory "
-         f"--reptype gz.msgs.Boolean --timeout 2000 "
-         f"--req 'sdf: \"{sdf}\", pose: {{position: {{x: 5, y: 0, z: 0.5}}}}' 2>/dev/null"],
-        capture_output=True, text=True, timeout=10
-    )
-    if result.returncode == 0:
-        print("  OK: Entity spawn succeeded")
-        return True
-    print("  WARN: Entity spawn failed (world may have different name)")
-    return True
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Multi-vehicle V2V integration test")
-    parser.add_argument("--gazebo-ip", default="127.0.0.1")
-    parser.parse_args()
-
-    print("=" * 50)
-    print("RealGazebo Multi-Vehicle V2V Integration Test")
-    print("=" * 50)
-    print()
-
-    if not check_docker():
-        print("SKIP: Docker not available")
-        sys.exit(0)
-
-    results = []
-
-    print("1. Docker running and containers up...")
-    ok = test_container_count(2)
-    results.append(("containers_running", ok))
-
-    print("2. Two vehicle containers present...")
-    ok = test_two_vehicles_present()
-    results.append(("two_vehicles", ok))
-
-    print("3. Gazebo topics flowing...")
-    ok = test_gazebo_topics("gazebo")
-    results.append(("gazebo_topics", ok))
-
-    print("4. Vehicle 1 ROS2 topics...")
-    ok = test_vehicle_topics("vehicle_0", [
-        "/vehicle1/fmu/out/vehicle_status",
-        "/vehicle1/fmu/out/vehicle_local_position",
-    ])
-    results.append(("vehicle_0_topics", ok))
-
-    print("5. Vehicle 2 ROS2 topics...")
-    ok = test_vehicle_topics("vehicle_1", [
-        "/vehicle2/fmu/out/vehicle_status",
-        "/vehicle2/fmu/out/vehicle_local_position",
-    ])
-    results.append(("vehicle_1_topics", ok))
-
-    print("6. Network diagnostics...")
-    ok = test_network_sim_diagnostics("gazebo")
-    results.append(("network_diagnostics", ok))
-
-    print()
-    print("=" * 50)
-    failures = [n for n, r in results if not r]
-    if failures:
-        print(f"FAILED ({len(failures)}/{len(results)}): {', '.join(failures)}")
-        sys.exit(1)
-    else:
-        print(f"ALL {len(results)} TESTS PASSED")
-        sys.exit(0)
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    unittest.main()

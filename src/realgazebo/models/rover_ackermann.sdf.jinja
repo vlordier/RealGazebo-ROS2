@@ -428,6 +428,11 @@
         <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
+{% if firmware == "ardupilot" %}
+    <plugin filename="gz-ardupilot" name="ArduPilot">
+      <instance_id>{{ unreal_port }}</instance_id>
+    </plugin>
+{% else %}
     <plugin filename="gz-sim-joint-controller-system" name="gz::sim::systems::JointController">
       <joint_name>rover_ackermann/FrontLeftWheelJoint</joint_name>
       <sub_topic>command/motor_speed</sub_topic>
@@ -484,6 +489,7 @@
       <i_gain>0</i_gain>
       <d_gain>0</d_gain>
     </plugin>
+{% endif %}
     <plugin filename="libRealGazebo.so" name="custom::RealGazebo">
       <unreal_ip>{{ unreal_ip }}</unreal_ip>
       <unreal_port>{{ unreal_port }}</unreal_port>

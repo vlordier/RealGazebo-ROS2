@@ -502,6 +502,11 @@
       </axis>
     </joint>
     <static>0</static>
+{% if firmware == "ardupilot" %}
+    <plugin filename="gz-ardupilot" name="ArduPilot">
+      <instance_id>{{ unreal_port }}</instance_id>
+    </plugin>
+{% else %}
     <plugin filename="gz-sim-multicopter-motor-model-system" name="gz::sim::systems::MulticopterMotorModel">
       <jointName>left_engine_propeller_joint</jointName>
       <linkName>left_propeller_link</linkName>
@@ -534,6 +539,7 @@
       <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
       <motorType>velocity</motorType>
     </plugin>
+{% endif %}
     <plugin filename="libUsivDynamicsPlugin.so" name="custom::UsvDynamics">
       <bodyName>base_link</bodyName>
 

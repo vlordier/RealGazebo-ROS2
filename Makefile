@@ -2,8 +2,8 @@
 .PHONY: setup build up test logs down
 
 setup:                 ## One-command: install deps + init submodules + pre-commit
-	git submodule update --init --recursive
-	pip install -r requirements.txt 2>/dev/null || true
+	git submodule update --init --recursive --depth 1 2>/dev/null || git submodule update --init --recursive
+	pip3 install -r requirements.txt -q 2>/dev/null; pip install -r requirements.txt -q 2>/dev/null; true
 	pre-commit install 2>/dev/null || true
 	@echo "Setup complete. Run 'make build' to build Docker image."
 
