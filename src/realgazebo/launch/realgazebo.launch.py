@@ -278,7 +278,7 @@ def launch_setup(context, *args, **kwargs):
 
     vehicle_lst, obstacle_lst = parse_yaml_to_list(vehicle_str)
     gazebo_path = f"{vehicle_lst[0]['build_target']}/Tools/simulation/gz"
-    pairs = vehicle_str.split(',')
+    vehicle_str.split(',')
 
     # Load YAML to get px4_targets
     with open(vehicle_str, 'r') as file:

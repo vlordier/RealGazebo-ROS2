@@ -120,7 +120,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     #     build_target: 0
     #     spawnpoint: (x, y, z, yaw)
 
-    px4_targets = config.get('px4_target', {})
+    config.get('px4_target', {})
     vehicles = config.get('vehicles', {})
 
     # Obstacles are not included in vehicle containers (they spawn in gazebo)
@@ -142,7 +142,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
         if vtype in support_obstacle:
             continue
 
-        build_target_key = vehicle.get('build_target')
+        vehicle.get('build_target')
         spawnpoint = parse_spawnpoint(vehicle.get('spawnpoint'))
 
         service_name = f'vehicle_{vid}'

@@ -62,7 +62,7 @@ class TestCommandMapping(unittest.TestCase):
 
     def test_all_controller_commands_supported(self):
         px4_supported = {"ARM", "DISARM", "OFFBOARD", "TAKEOFF", "START"}
-        controller_bindings = set(KEY_BINDINGS.values())
+        set(KEY_BINDINGS.values())
         for cmd_key, cmd_val in KEY_BINDINGS.items():
             with self.subTest(cmd=cmd_val):
                 self.assertIn(cmd_val, px4_supported,

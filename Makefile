@@ -1,24 +1,27 @@
 # RealGazebo Makefile — common development tasks
 # Usage: make <target>
-#   make test          Run all Python tests
-#   make test-v        Run all Python tests (verbose)
-#   make lint          Run flake8 on Python code
-#   make build-base    Build ARM64 base Docker image (ROS2 + Gazebo only)
-#   make build-full    Build ARM64 full Docker image (includes PX4 + ArduPilot)
-#   make up            Start simulation with Docker Compose
-#   make up-dev        Start simulation with hot-reload mounts
-#   make down          Stop simulation
-#   make logs          Follow all logs
-#   make clean         Remove build artifacts
-#   make shellcheck    Check bash scripts
 
 SHELL := /bin/bash
 PYTHON := python3.12
 DOCKER_COMPOSE := docker compose
+VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
+
+# ── Setup ────────────────────────────────────────────────────────────────────
+
+.PHONY: setup install-deps pre-commit-install
+
+setup: install-deps pre-commit-install
+	@echo "Setup complete"
+
+install-deps:
+	pip install ruff pre-commit mypy pydantic hypothesis 2>/dev/null || true
+
+pre-commit-install:
+	@which pre-commit >/dev/null 2>&1 && pre-commit install || echo "pre-commit not found, skipping"
 
 # ── Python ──────────────────────────────────────────────────────────────────
 
-.PHONY: test test-v lint
+.PHONY: test test-v lint typecheck
 
 test:
 	@echo "=== Running all Python tests ==="
@@ -34,22 +37,29 @@ test-v:
 	$(PYTHON) -m unittest discover -s realgazebo-dora/test -v
 
 lint:
-	@echo "=== Flake8 ==="
-	@find src/manager src/drone_controller src/image_viewer scripts -name "*.py" -not -path "*/px4_msgs/*" -exec flake8 {} \; 2>/dev/null || echo "  (flake8 not installed, skipping)"
+	ruff check .
+	ruff format --check .
+
+typecheck:
+	mypy --ignore-missing-imports realgazebo-dora/ src/ scripts/
 
 # ── Docker Build ────────────────────────────────────────────────────────────
 
-.PHONY: build-base build-full
+.PHONY: build-base build-full build-push
 
 build-base:
 	$(DOCKER_COMPOSE) build gazebo 2>&1 | tail -5
 
 build-full:
-	docker build -f docker/Dockerfile -t realgazebo:arm64 . 2>&1 | tail -5
+	docker build -f docker/Dockerfile -t realgazebo:$(VERSION) . 2>&1 | tail -5
+
+build-push:
+	docker tag realgazebo:$(VERSION) ghcr.io/vlordier/realgazebo:$(VERSION)
+	docker push ghcr.io/vlordier/realgazebo:$(VERSION)
 
 # ── Simulation ──────────────────────────────────────────────────────────────
 
-.PHONY: up up-dev down logs
+.PHONY: up up-dev down logs ps
 
 up:
 	@echo "Generating compose override..."
@@ -66,6 +76,46 @@ down:
 
 logs:
 	$(DOCKER_COMPOSE) logs -f
+
+ps:
+	$(DOCKER_COMPOSE) ps
+
+# ── Docs ─────────────────────────────────────────────────────────────────────
+
+.PHONY: docs docs-serve
+
+docs:
+	cd docs && sphinx-build -b html . _build/html 2>/dev/null || echo "sphinx not installed"
+
+docs-serve:
+	cd docs/_build/html && python3 -m http.server 8080
+
+# ── Benchmarks ───────────────────────────────────────────────────────────────
+
+.PHONY: benchmark
+
+benchmark:
+	@echo "=== network_sim performance ==="
+	@PYTHONPATH=realgazebo-dora/ros2-bridge $(PYTHON) -m scripts.tests.test_benchmark
+
+# ── Version Management ──────────────────────────────────────────────────────
+
+.PHONY: version bump-patch bump-minor tag
+
+version:
+	@echo "$(VERSION)"
+
+bump-patch:
+	@echo "Bumping patch version..."
+	@echo $(VERSION) | awk -F. '{printf "%d.%d.%d\n", $$1, $$2, $$3+1}' > .version
+
+bump-minor:
+	@echo "Bumping minor version..."
+	@echo $(VERSION) | awk -F. '{printf "%d.%d.0\n", $$1, $$2+1}' > .version
+
+tag:
+	git tag v$(shell cat .version 2>/dev/null || echo $(VERSION))
+	git push origin v$(shell cat .version 2>/dev/null || echo $(VERSION))
 
 # ── Maintenance ─────────────────────────────────────────────────────────────
 

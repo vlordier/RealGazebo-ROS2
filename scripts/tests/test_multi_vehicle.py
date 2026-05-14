@@ -147,7 +147,7 @@ def test_entity_spawn(container: str = "gazebo") -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Multi-vehicle V2V integration test")
     parser.add_argument("--gazebo-ip", default="127.0.0.1")
-    args = parser.parse_args()
+    parser.parse_args()
 
     print("=" * 50)
     print("RealGazebo Multi-Vehicle V2V Integration Test")
