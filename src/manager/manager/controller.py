@@ -1,4 +1,3 @@
-
 import rclpy
 from geometry_msgs.msg import Twist
 from rclpy.node import Node
@@ -26,17 +25,15 @@ def main(args=None):
     main_cmd_publishers = []
 
     if cmd_vel_needed:
-        cmd_vel_publisher = node.create_publisher(Twist, "cmd_vel", 10)
+        cmd_vel_publisher = node.create_publisher(Twist, 'cmd_vel', 10)
 
     for i in range(1, vehicles + 1):
         topic = MAIN_CMD_TOPIC_TEMPLATE.format(i=i)
-        main_cmd_publishers.append(
-            node.create_publisher(String, topic, 10)
-        )
+        main_cmd_publishers.append(node.create_publisher(String, topic, 10))
 
     node.get_logger().info(
-        f"[ctrl] Controller ready: {vehicles} vehicle(s), "
-        f"cmd_vel={'yes' if cmd_vel_needed else 'no'}"
+        f'[ctrl] Controller ready: {vehicles} vehicle(s), '
+        f'cmd_vel={"yes" if cmd_vel_needed else "no"}'
     )
 
     try:
@@ -57,10 +54,10 @@ def main(args=None):
                 for pub in main_cmd_publishers:
                     pub.publish(msg)
             elif key == '\x03':
-                node.get_logger().info("[ctrl] Ctrl+C, shutting down")
+                node.get_logger().info('[ctrl] Ctrl+C, shutting down')
                 break
     except Exception as e:
-        node.get_logger().error(f"[ctrl] Error: {e}")
+        node.get_logger().error(f'[ctrl] Error: {e}')
 
 
 def _read_key() -> str | None:
@@ -69,6 +66,7 @@ def _read_key() -> str | None:
     import sys as _sys
     import termios as _termios
     import tty as _tty
+
     settings = _termios.tcgetattr(_sys.stdin)
     try:
         _tty.setcbreak(_sys.stdin.fileno())

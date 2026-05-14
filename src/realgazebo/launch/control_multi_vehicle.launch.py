@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
         px4_ros2_node = Node(
             package='manager',
             executable='px4_ros2',
-            parameters=[{'system_id': i + 1, 'use_sim_time': True}]
+            parameters=[{'system_id': i + 1, 'use_sim_time': True}],
         )
         uv_process_list.append(px4_ros2_node)
 
@@ -38,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
         package='manager',
         executable='controller',
         parameters=[{'vehicles': vehicles, 'cmd_vel_needed': cmd_vel_needed, 'use_sim_time': True}],
-        prefix='xterm -e'
+        prefix='xterm -e',
     )
 
     nodes_to_start = [
@@ -47,6 +47,7 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     return nodes_to_start
+
 
 def generate_launch_description():
     declared_arguments = []

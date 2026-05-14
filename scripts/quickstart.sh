@@ -71,7 +71,7 @@ fi
 
 # ── Step 4: Start simulation ─────────────────────────────────────────────
 info "Starting simulation with config: $CONFIG_FILE ..."
-python3 scripts/generate_compose.py "$CONFIG_FILE" 2>/dev/null || true
+python3 scripts/generate_compose.py "$CONFIG_FILE" 2>&1 | grep -v DeprecationWarning || true
 docker compose down 2>/dev/null || true
 docker compose up -d 2>&1 | tail -3
 info "Containers started. Waiting for Gazebo..."

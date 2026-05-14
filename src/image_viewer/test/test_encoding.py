@@ -20,12 +20,13 @@ try:
         RGB_CHANNEL_COUNT,
         RGBA_CHANNEL_COUNT,
     )
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
 
 
-@unittest.skipIf(not HAS_CV2, "cv2 not available")
+@unittest.skipIf(not HAS_CV2, 'cv2 not available')
 class TestEncodingConstants(unittest.TestCase):
     def test_lifecycle_timeout(self):
         self.assertGreater(LIFECYCLE_SERVICE_TIMEOUT_S, 0)
@@ -44,11 +45,10 @@ class TestEncodingConstants(unittest.TestCase):
         self.assertEqual(MONO_CHANNEL_COUNT, 1)
 
 
-@unittest.skipIf(not HAS_CV2, "cv2 not available")
+@unittest.skipIf(not HAS_CV2, 'cv2 not available')
 class TestEncodingTable(unittest.TestCase):
     def test_has_all_standard_encodings(self):
-        self.assertEqual(set(ENCODING_CONFIG.keys()),
-                         {'rgb8', 'bgr8', 'rgba8', 'bgra8', 'mono8'})
+        self.assertEqual(set(ENCODING_CONFIG.keys()), {'rgb8', 'bgr8', 'rgba8', 'bgra8', 'mono8'})
 
     def test_channel_counts(self):
         cases = [('rgb8', 3), ('bgr8', 3), ('rgba8', 4), ('bgra8', 4), ('mono8', 1)]

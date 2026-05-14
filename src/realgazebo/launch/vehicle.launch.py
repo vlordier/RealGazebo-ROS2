@@ -35,7 +35,7 @@ from launch_ros.actions import Node
 
 SENSOR_BRIDGE_TYPES = {
     'gpu_lidar': [
-        ('scan',        'sensor_msgs/msg/LaserScan',   'gz.msgs.LaserScan'),
+        ('scan', 'sensor_msgs/msg/LaserScan', 'gz.msgs.LaserScan'),
         ('scan/points', 'sensor_msgs/msg/PointCloud2', 'gz.msgs.PointCloudPacked'),
     ],
 }
@@ -54,13 +54,15 @@ def get_sensor_bridges(vehicle_type, vehicle_id, world, model_search_paths=None)
 
     def add_entries(link_name, sensor_name, sensor_type):
         for suffix, ros_type, gz_type in SENSOR_BRIDGE_TYPES.get(sensor_type, []):
-            bridges.append({
-                'ros_topic_name': f'/vehicle{vehicle_num}/{suffix}',
-                'gz_topic_name': f'/world/{world}/model/{vehicle_type}_{vehicle_id}/link/{link_name}/sensor/{sensor_name}/{suffix}',
-                'ros_type_name': ros_type,
-                'gz_type_name': gz_type,
-                'direction': 'GZ_TO_ROS',
-            })
+            bridges.append(
+                {
+                    'ros_topic_name': f'/vehicle{vehicle_num}/{suffix}',
+                    'gz_topic_name': f'/world/{world}/model/{vehicle_type}_{vehicle_id}/link/{link_name}/sensor/{sensor_name}/{suffix}',
+                    'ros_type_name': ros_type,
+                    'gz_type_name': gz_type,
+                    'direction': 'GZ_TO_ROS',
+                }
+            )
 
     for link in model.findall('link'):
         for sensor in link.findall('sensor'):
@@ -77,7 +79,9 @@ def get_sensor_bridges(vehicle_type, vehicle_id, world, model_search_paths=None)
                     if inc_model:
                         for link in inc_model.findall('link'):
                             for sensor in link.findall('sensor'):
-                                add_entries(link.get('name'), sensor.get('name'), sensor.get('type'))
+                                add_entries(
+                                    link.get('name'), sensor.get('name'), sensor.get('type')
+                                )
                     break
 
     return bridges
@@ -85,11 +89,11 @@ def get_sensor_bridges(vehicle_type, vehicle_id, world, model_search_paths=None)
 
 def scan_airframes_directory(px4_build_path):
     """Scan PX4 airframes directory and build vehicle type to autostart ID mapping"""
-    airframes_dir = os.path.join(px4_build_path, "ROMFS/px4fmu_common/init.d-posix/airframes")
+    airframes_dir = os.path.join(px4_build_path, 'ROMFS/px4fmu_common/init.d-posix/airframes')
     vehicle_autostart_map = {}
 
     if not os.path.exists(airframes_dir):
-        print(f"Warning: Airframes directory not found at {airframes_dir}")
+        print(f'Warning: Airframes directory not found at {airframes_dir}')
         return vehicle_autostart_map
 
     try:
@@ -101,7 +105,7 @@ def scan_airframes_directory(px4_build_path):
                     vehicle_type = parts[1]
                     vehicle_autostart_map[vehicle_type] = autostart_id
     except Exception as e:
-        print(f"Error scanning airframes directory: {e}")
+        print(f'Error scanning airframes directory: {e}')
 
     return vehicle_autostart_map
 
@@ -113,8 +117,8 @@ def get_autostart_id(vehicle_type, px4_build_path):
     if vehicle_type not in vehicle_autostart_map:
         available_types = list(vehicle_autostart_map.keys())
         print(f"ERROR: No airframe file found for vehicle type '{vehicle_type}'")
-        print(f"Available vehicle types: {available_types}")
-        raise ValueError(f"Unsupported vehicle type: {vehicle_type}")
+        print(f'Available vehicle types: {available_types}')
+        raise ValueError(f'Unsupported vehicle type: {vehicle_type}')
 
     return vehicle_autostart_map[vehicle_type]
 
@@ -124,10 +128,7 @@ def create_timed_actions(actions_list, initial_delay, interval):
     timed_actions = []
     current_delay = initial_delay
     for action in actions_list:
-        timed_action = launch.actions.TimerAction(
-            actions=[action],
-            period=current_delay
-        )
+        timed_action = launch.actions.TimerAction(actions=[action], period=current_delay)
         timed_actions.append(timed_action)
         current_delay += interval
     return timed_actions
@@ -145,37 +146,36 @@ def launch_setup(context, *args, **kwargs):
     px4_path = LaunchConfiguration('px4_path').perform(context)
     unreal_ip = LaunchConfiguration('unreal_ip').perform(context)
     unreal_port = LaunchConfiguration('unreal_port').perform(context)
-    start_control_node = LaunchConfiguration('start_control_node').perform(context).lower() == 'true'
+    start_control_node = (
+        LaunchConfiguration('start_control_node').perform(context).lower() == 'true'
+    )
     vehicle_models_str = LaunchConfiguration('vehicle_models').perform(context)
     skip_params = LaunchConfiguration('skip_params').perform(context).lower() == 'true'
 
     # Parse spawnpoint: "x,y,z,yaw"
     spawnpoint = [float(x.strip()) for x in spawnpoint_str.split(',')]
     if len(spawnpoint) != 4:
-        raise ValueError(f"Spawnpoint must have 4 values (x,y,z,yaw), got: {spawnpoint_str}")
+        raise ValueError(f'Spawnpoint must have 4 values (x,y,z,yaw), got: {spawnpoint_str}')
 
-    gazebo_path = f"{px4_path}/Tools/simulation/gz"
-    ap_gazebo_path = f"{px4_path}/ardupilot_gazebo"  # ArduPilot Gazebo plugin path
+    gazebo_path = f'{px4_path}/Tools/simulation/gz'
+    ap_gazebo_path = f'{px4_path}/ardupilot_gazebo'  # ArduPilot Gazebo plugin path
 
     # Environment variables
     model_path_env = SetEnvironmentVariable(
         'GZ_SIM_RESOURCE_PATH',
-        f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds'
+        f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds',
     )
 
     plugin_paths = [
-        "$GZ_SIM_SYSTEM_PLUGIN_PATH",
-        f"{current_package_prefix}/lib/realgazebo",
+        '$GZ_SIM_SYSTEM_PLUGIN_PATH',
+        f'{current_package_prefix}/lib/realgazebo',
     ]
-    if firmware == "ardupilot":
-        plugin_paths.append(f"{ap_gazebo_path}/build")
+    if firmware == 'ardupilot':
+        plugin_paths.append(f'{ap_gazebo_path}/build')
     else:
-        plugin_paths.append(f"{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins")
+        plugin_paths.append(f'{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins')
 
-    plugin_path_env = SetEnvironmentVariable(
-        'GZ_SIM_SYSTEM_PLUGIN_PATH',
-        ':'.join(plugin_paths)
-    )
+    plugin_path_env = SetEnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH', ':'.join(plugin_paths))
 
     uxrce_dds_synct_param_env = SetEnvironmentVariable('PX4_PARAM_UXRCE_DDS_SYNCT', '0')
     uxrce_dds_ptcfg_env = SetEnvironmentVariable('PX4_PARAM_UXRCE_DDS_PTCFG', '2')
@@ -186,7 +186,7 @@ def launch_setup(context, *args, **kwargs):
     # DDS profile for vehicle-network only communication
     # Generate dynamically with correct IP for this vehicle
     vehicle_network_ip = f'172.30.0.{10 + instance_id}'
-    dds_profile_content = f'''<?xml version="1.0" encoding="UTF-8" ?>
+    dds_profile_content = f"""<?xml version="1.0" encoding="UTF-8" ?>
 <profiles xmlns="http://www.eprosima.com">
     <transport_descriptors>
         <transport_descriptor>
@@ -205,10 +205,10 @@ def launch_setup(context, *args, **kwargs):
             </userTransports>
         </rtps>
     </participant>
-</profiles>'''
+</profiles>"""
 
     # === PX4-specific setup ===
-    if firmware == "px4":
+    if firmware == 'px4':
         dds_profile_dir = '/tmp/dds_profiles'
         os.makedirs(dds_profile_dir, exist_ok=True)
         dds_profile_path = os.path.join(dds_profile_dir, f'px4_participant_{instance_id}.xml')
@@ -219,7 +219,14 @@ def launch_setup(context, *args, **kwargs):
 
         # 1. MicroXRCEAgent - DDS bridge for PX4
         xrce_agent_process = ExecuteProcess(
-            cmd=[FindExecutable(name='MicroXRCEAgent'), 'udp4', '-p', '8888', '-r', dds_profile_path]
+            cmd=[
+                FindExecutable(name='MicroXRCEAgent'),
+                'udp4',
+                '-p',
+                '8888',
+                '-r',
+                dds_profile_path,
+            ]
         )
         actions.append(xrce_agent_process)
 
@@ -252,13 +259,13 @@ def launch_setup(context, *args, **kwargs):
             'z': str(spawnpoint[2]),
             'R': '0.0',
             'P': '0.0',
-            'Y': str(spawnpoint[3])
-        }.items()
+            'Y': str(spawnpoint[3]),
+        }.items(),
     )
     timed_actions.append(spawn_entity)
 
     # 4. SITL instance (after spawn) - PX4 or ArduPilot
-    if firmware == "px4":
+    if firmware == 'px4':
         autostart_id = get_autostart_id(vehicle_type, px4_path)
 
         px4_env = {
@@ -266,10 +273,10 @@ def launch_setup(context, *args, **kwargs):
             'PX4_SYS_AUTOSTART': autostart_id,
             'PX4_GZ_MODEL_NAME': f'{vehicle_type}_{instance_id}',
             'PX4_UXRCE_DDS_NS': f'vehicle{instance_id + 1}',
-            'PX4_GZ_WORLD': 'c-track'
+            'PX4_GZ_WORLD': 'c-track',
         }
 
-        px4_binary = f"{px4_path}/build/px4_sitl_default/bin/px4"
+        px4_binary = f'{px4_path}/build/px4_sitl_default/bin/px4'
         px4_process = ExecuteProcess(
             cmd=[px4_binary, '-i', str(instance_id)],
             additional_env=px4_env,
@@ -279,7 +286,7 @@ def launch_setup(context, *args, **kwargs):
 
         # 5. PX4 parameter configuration (after PX4 starts)
         #    Skip with skip_params:=true to preserve runtime changes across restarts
-        px4_param_binary = f"{px4_path}/build/px4_sitl_default/bin/px4-param"
+        px4_param_binary = f'{px4_path}/build/px4_sitl_default/bin/px4-param'
 
         param_commands = [
             (px4_param_binary, '--instance', str(instance_id), 'set', 'NAV_DLL_ACT', '0'),
@@ -292,19 +299,24 @@ def launch_setup(context, *args, **kwargs):
                 param_process = ExecuteProcess(cmd=list(cmd))
                 timed_actions.append(param_process)
 
-    elif firmware == "ardupilot":
-        ap_home = f"{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}"
-        ap_binary = "/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter"
+    elif firmware == 'ardupilot':
+        ap_home = f'{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}'
+        ap_binary = '/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter'
 
         ardupilot_process = ExecuteProcess(
             cmd=[
                 ap_binary,
                 f'-I{instance_id}',
-                '--model', f'gazebo-{vehicle_type}',
-                '--home', ap_home,
-                '--speedup', '1',
-                '--instance', str(instance_id),
-                '--uartC', 'tcp:0',
+                '--model',
+                f'gazebo-{vehicle_type}',
+                '--home',
+                ap_home,
+                '--speedup',
+                '1',
+                '--instance',
+                str(instance_id),
+                '--uartC',
+                'tcp:0',
             ],
             output='screen',
         )
@@ -313,34 +325,36 @@ def launch_setup(context, *args, **kwargs):
         # Bridge ArduPilot MAVLink → ROS2 via MAVROS
         mavros_bridge = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                PathJoinSubstitution([
-                    get_package_share_directory('ardupilot_bridge'),
-                    'launch', 'ardupilot_bridge.launch.py'
-                ])
+                PathJoinSubstitution(
+                    [
+                        get_package_share_directory('ardupilot_bridge'),
+                        'launch',
+                        'ardupilot_bridge.launch.py',
+                    ]
+                )
             ),
             launch_arguments={
                 'instance_id': str(instance_id),
                 'fcu_url': f'udp://127.0.0.1:{14550 + instance_id * 2}@14555',
                 'tgt_system': str(instance_id + 1),
-            }.items()
+            }.items(),
         )
         timed_actions.append(mavros_bridge)
 
-    elif firmware == "jsbsim":
+    elif firmware == 'jsbsim':
         # JSBSim flight dynamics model — spawn vehicle in Gazebo visually
         # but get physics from JSBSim instead of Gazebo
         jsbsim_node = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                PathJoinSubstitution([
-                    get_package_share_directory('jsbsim_bridge'),
-                    'launch', 'jsbsim.launch.py'
-                ])
+                PathJoinSubstitution(
+                    [get_package_share_directory('jsbsim_bridge'), 'launch', 'jsbsim.launch.py']
+                )
             ),
             launch_arguments={
                 'instance_id': str(instance_id),
                 'aircraft': vehicle_type,
                 'gazebo_bridge': 'true',
-            }.items()
+            }.items(),
         )
         timed_actions.append(jsbsim_node)
 
@@ -350,10 +364,7 @@ def launch_setup(context, *args, **kwargs):
             package='drone_controller',
             executable='drone_controller',
             name=f'drone_controller_{instance_id}',
-            parameters=[{
-                'use_sim_time': True,
-                'vehicle_id': instance_id + 1
-            }]
+            parameters=[{'use_sim_time': True, 'vehicle_id': instance_id + 1}],
         )
         timed_actions.append(control_node)
 
@@ -364,17 +375,19 @@ def launch_setup(context, *args, **kwargs):
         package='network_sim',
         executable='network_sim_node',
         namespace=f'network_sim_{instance_id}',
-        parameters=[{
-            'instance_id': instance_id,
-            'network_interface': 'eth1',
-            'gz_world_name': 'c-track',
-            'vehicle_models': vehicle_models_str,
-            'enable_on_startup': True,
-            'max_latency_ms': 1000.0,
-            'max_jitter_ms': 500.0,
-            'max_packet_loss_rate': 0.99,
-        }],
-        output='screen'
+        parameters=[
+            {
+                'instance_id': instance_id,
+                'network_interface': 'eth1',
+                'gz_world_name': 'c-track',
+                'vehicle_models': vehicle_models_str,
+                'enable_on_startup': True,
+                'max_latency_ms': 1000.0,
+                'max_jitter_ms': 500.0,
+                'max_packet_loss_rate': 0.99,
+            }
+        ],
+        output='screen',
     )
     timed_actions.append(network_sim_node)
 
@@ -393,16 +406,14 @@ def launch_setup(context, *args, **kwargs):
             package='ros_gz_bridge',
             executable='parameter_bridge',
             name=f'sensor_bridge_{vehicle_type}_{instance_id}',
-            parameters=[{'config_file': bridge_cfg_path}]
+            parameters=[{'config_file': bridge_cfg_path}],
         )
         timed_actions.append(bridge_node)
 
     # Apply timing: spawn at T+10s, then 5s interval for subsequent actions
     # Increased delays to ensure gz-transport discovery completes before PX4 subscribes
     timed_action_nodes = create_timed_actions(
-        timed_actions,
-        initial_delay=VEHICLE_SPAWN_DELAY_S,
-        interval=VEHICLE_ACTION_INTERVAL_S
+        timed_actions, initial_delay=VEHICLE_SPAWN_DELAY_S, interval=VEHICLE_ACTION_INTERVAL_S
     )
 
     nodes_to_start = [
@@ -411,7 +422,7 @@ def launch_setup(context, *args, **kwargs):
         *actions,
         *timed_action_nodes,
     ]
-    if firmware == "px4":
+    if firmware == 'px4':
         nodes_to_start.insert(2, fastrtps_env)
         nodes_to_start.insert(2, uxrce_dds_ptcfg_env)
         nodes_to_start.insert(2, uxrce_dds_synct_param_env)
@@ -423,16 +434,12 @@ def generate_launch_description():
     declared_arguments = []
 
     declared_arguments.append(
-        DeclareLaunchArgument(
-            'instance_id',
-            description='Vehicle instance ID (0, 1, 2, ...)'
-        )
+        DeclareLaunchArgument('instance_id', description='Vehicle instance ID (0, 1, 2, ...)')
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'firmware',
-            description='Flight controller firmware (px4, ardupilot, jsbsim) — required'
+            'firmware', description='Flight controller firmware (px4, ardupilot, jsbsim) — required'
         )
     )
 
@@ -440,15 +447,13 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'vehicle_type',
             default_value='x500',
-            description='Vehicle type (x500, rover_ackermann, lc_62, boat)'
+            description='Vehicle type (x500, rover_ackermann, lc_62, boat)',
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'spawnpoint',
-            default_value='0,0,0,0',
-            description='Spawn position as "x,y,z,yaw"'
+            'spawnpoint', default_value='0,0,0,0', description='Spawn position as "x,y,z,yaw"'
         )
     )
 
@@ -456,23 +461,19 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'px4_path',
             default_value='/home/user/realgazebo/RealGazebo-PX4',
-            description='Path to PX4-Autopilot build'
+            description='Path to PX4-Autopilot build',
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'unreal_ip',
-            default_value='127.0.0.1',
-            description='IP address of Unreal Engine server'
+            'unreal_ip', default_value='127.0.0.1', description='IP address of Unreal Engine server'
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'unreal_port',
-            default_value='5005',
-            description='Port of Unreal Engine server'
+            'unreal_port', default_value='5005', description='Port of Unreal Engine server'
         )
     )
 
@@ -481,7 +482,7 @@ def generate_launch_description():
             'start_control_node',
             default_value='false',
             description='Whether to start the drone controller node',
-            choices=['true', 'false']
+            choices=['true', 'false'],
         )
     )
 
@@ -489,7 +490,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'vehicle_models',
             default_value='',
-            description='Comma-separated list of Gazebo model names (e.g., x500_0,lc_62_1,boat_8)'
+            description='Comma-separated list of Gazebo model names (e.g., x500_0,lc_62_1,boat_8)',
         )
     )
 
@@ -498,7 +499,7 @@ def generate_launch_description():
             'skip_params',
             default_value='false',
             description='Skip PX4 parameter reset (preserves runtime changes across restarts)',
-            choices=['true', 'false']
+            choices=['true', 'false'],
         )
     )
 

@@ -20,11 +20,11 @@ class TestKeyBindings(unittest.TestCase):
         self.assertIn('d', KEY_BINDINGS)
 
     def test_values(self):
-        self.assertEqual(KEY_BINDINGS['a'], "ARM")
-        self.assertEqual(KEY_BINDINGS['o'], "OFFBOARD")
-        self.assertEqual(KEY_BINDINGS['t'], "TAKEOFF")
-        self.assertEqual(KEY_BINDINGS['s'], "START")
-        self.assertEqual(KEY_BINDINGS['d'], "DISARM")
+        self.assertEqual(KEY_BINDINGS['a'], 'ARM')
+        self.assertEqual(KEY_BINDINGS['o'], 'OFFBOARD')
+        self.assertEqual(KEY_BINDINGS['t'], 'TAKEOFF')
+        self.assertEqual(KEY_BINDINGS['s'], 'START')
+        self.assertEqual(KEY_BINDINGS['d'], 'DISARM')
 
     def test_exact_count(self):
         self.assertEqual(len(KEY_BINDINGS), 5)
@@ -39,9 +39,9 @@ class TestTopicTemplate(unittest.TestCase):
     def test_topic_format(self):
         for i in [1, 3, 10]:
             topic = MAIN_CMD_TOPIC_TEMPLATE.format(i=i)
-            self.assertTrue(topic.startswith("vehicle"))
-            self.assertTrue(topic.endswith("in/main_cmd"))
-            self.assertEqual(topic, f"vehicle{i}/manager/in/main_cmd")
+            self.assertTrue(topic.startswith('vehicle'))
+            self.assertTrue(topic.endswith('in/main_cmd'))
+            self.assertEqual(topic, f'vehicle{i}/manager/in/main_cmd')
 
 
 class TestUsageMessage(unittest.TestCase):
@@ -52,10 +52,10 @@ class TestUsageMessage(unittest.TestCase):
             self.assertIn(cmd, USAGE_MESSAGE)
 
     def test_contains_arm(self):
-        self.assertIn("arm", USAGE_MESSAGE.lower())
+        self.assertIn('arm', USAGE_MESSAGE.lower())
 
     def test_contains_disarm(self):
-        self.assertIn("disarm", USAGE_MESSAGE.lower())
+        self.assertIn('disarm', USAGE_MESSAGE.lower())
 
 
 if __name__ == '__main__':

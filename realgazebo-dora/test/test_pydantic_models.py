@@ -21,24 +21,24 @@ class TestVehiclePoseValidation(unittest.TestCase):
     def test_defaults(self):
         p = VehiclePose()
         self.assertEqual(p.x, 0.0)
-        self.assertEqual(p.vehicle_type, "unknown")
+        self.assertEqual(p.vehicle_type, 'unknown')
         self.assertEqual(p.vehicle_id, 0)
 
     def test_valid_values(self):
-        p = VehiclePose(x=10.5, y=-20.3, z=-5.0, vehicle_id=1, vehicle_type="x500")
+        p = VehiclePose(x=10.5, y=-20.3, z=-5.0, vehicle_id=1, vehicle_type='x500')
         self.assertEqual(p.x, 10.5)
         self.assertEqual(p.y, -20.3)
         self.assertEqual(p.z, -5.0)
 
     def test_vehicle_type_regex(self):
-        valid = ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "unknown"]
+        valid = ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'unknown']
         for vt in valid:
             p = VehiclePose(vehicle_type=vt)
             self.assertEqual(p.vehicle_type, vt)
 
     def test_invalid_vehicle_type(self):
         with self.assertRaises(Exception):
-            VehiclePose(vehicle_type="spaceship")
+            VehiclePose(vehicle_type='spaceship')
 
     def test_vehicle_id_range(self):
         VehiclePose(vehicle_id=0)
@@ -60,7 +60,7 @@ class TestVehiclePoseValidation(unittest.TestCase):
             VehiclePose(z=500.0)
 
     def test_to_json_roundtrip(self):
-        p1 = VehiclePose(x=1.0, y=2.0, z=-3.0, vehicle_type="x500", vehicle_id=0, timestamp_us=1000)
+        p1 = VehiclePose(x=1.0, y=2.0, z=-3.0, vehicle_type='x500', vehicle_id=0, timestamp_us=1000)
         data = p1.to_json()
         p2 = VehiclePose.from_json(data)
         assert p1 == p2
@@ -68,7 +68,7 @@ class TestVehiclePoseValidation(unittest.TestCase):
     def test_json_contains_all_fields(self):
         p = VehiclePose(x=1.0, y=2.0, z=-3.0)
         raw = p.model_dump_json()
-        for field in ("x", "y", "z", "vehicle_id", "vehicle_type", "heading", "timestamp_us"):
+        for field in ('x', 'y', 'z', 'vehicle_id', 'vehicle_type', 'heading', 'timestamp_us'):
             self.assertIn(field, raw)
 
 
@@ -113,15 +113,15 @@ class TestVehicleStatus(unittest.TestCase):
             VehicleStatus(nav_state=32)
 
     def test_flight_mode_normalization(self):
-        s = VehicleStatus(flight_mode="offboard")
-        self.assertEqual(s.flight_mode, "OFFBOARD")
+        s = VehicleStatus(flight_mode='offboard')
+        self.assertEqual(s.flight_mode, 'OFFBOARD')
 
     def test_invalid_flight_mode(self):
         with self.assertRaises(Exception):
-            VehicleStatus(flight_mode="HYPERDRIVE")
+            VehicleStatus(flight_mode='HYPERDRIVE')
 
     def test_to_json(self):
-        s = VehicleStatus(armed=True, battery_pct=75.5, flight_mode="OFFBOARD")
+        s = VehicleStatus(armed=True, battery_pct=75.5, flight_mode='OFFBOARD')
         data = s.to_json()
         self.assertIn(b'"armed":true', data)
         self.assertIn(b'"battery_pct":75.5', data)
@@ -163,9 +163,13 @@ class TestV2VQuality(unittest.TestCase):
 
     def test_roundtrip(self):
         q1 = V2VQuality(
-            source_id=0, dest_id=1, distance_m=100.0,
-            rssi_dbm=-75.0, packet_loss_rate=0.3,
-            latency_ms=15.0, jitter_ms=5.0
+            source_id=0,
+            dest_id=1,
+            distance_m=100.0,
+            rssi_dbm=-75.0,
+            packet_loss_rate=0.3,
+            latency_ms=15.0,
+            jitter_ms=5.0,
         )
         data = q1.to_json()
         q2 = V2VQuality.model_validate_json(data.decode())
@@ -176,39 +180,39 @@ class TestVehicleConfig(unittest.TestCase):
     """Test VehicleConfig for YAML validation."""
 
     def test_px4_firmware_default(self):
-        c = VehicleConfig(type="x500")
-        self.assertEqual(c.firmware, "px4")
+        c = VehicleConfig(type='x500')
+        self.assertEqual(c.firmware, 'px4')
 
     def test_ardupilot_firmware(self):
-        c = VehicleConfig(type="x500", firmware="ardupilot")
-        self.assertEqual(c.firmware, "ardupilot")
+        c = VehicleConfig(type='x500', firmware='ardupilot')
+        self.assertEqual(c.firmware, 'ardupilot')
 
     def test_invalid_firmware(self):
         with self.assertRaises(Exception):
-            VehicleConfig(type="x500", firmware="crazyflie")
+            VehicleConfig(type='x500', firmware='crazyflie')
 
     def test_valid_types(self):
-        for vt in ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat"]:
+        for vt in ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat']:
             c = VehicleConfig(type=vt)
             self.assertEqual(c.type, vt)
 
     def test_rock_type(self):
-        c = VehicleConfig(type="rock")
-        self.assertEqual(c.type, "rock")
+        c = VehicleConfig(type='rock')
+        self.assertEqual(c.type, 'rock')
 
     def test_invalid_type(self):
         with self.assertRaises(Exception):
-            VehicleConfig(type="spaceship")
+            VehicleConfig(type='spaceship')
 
     def test_spawnpoint_default(self):
-        c = VehicleConfig(type="x500")
+        c = VehicleConfig(type='x500')
         self.assertEqual(c.spawnpoint, (0.0, 0.0, 0.0, 0.0))
 
     def test_spawnpoint_yaw_validation(self):
-        VehicleConfig(type="x500", spawnpoint=(0, 0, 0, 3.14))
-        VehicleConfig(type="x500", spawnpoint=(0, 0, 0, -3.14))
+        VehicleConfig(type='x500', spawnpoint=(0, 0, 0, 3.14))
+        VehicleConfig(type='x500', spawnpoint=(0, 0, 0, -3.14))
         with self.assertRaises(Exception):
-            VehicleConfig(type="x500", spawnpoint=(0, 0, 0, 10.0))
+            VehicleConfig(type='x500', spawnpoint=(0, 0, 0, 10.0))
 
 
 if __name__ == '__main__':

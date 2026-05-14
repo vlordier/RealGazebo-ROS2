@@ -1,4 +1,5 @@
 """Shared test configuration: adds scripts/ to sys.path for all test files."""
+
 import os
 import sys
 

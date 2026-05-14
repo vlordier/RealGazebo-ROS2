@@ -1,4 +1,3 @@
-
 from launch import LaunchDescription
 from launch.actions import (
     OpaqueFunction,
@@ -10,7 +9,7 @@ def launch_setup(context, *args, **kwargs):
     controller_node = Node(
         package='drone_controller',
         executable='drone_controller',
-        parameters=[{'use_sim_time': True}]
+        parameters=[{'use_sim_time': True}],
     )
 
     nodes_to_start = [
@@ -18,6 +17,7 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     return nodes_to_start
+
 
 def generate_launch_description():
     declared_arguments = []

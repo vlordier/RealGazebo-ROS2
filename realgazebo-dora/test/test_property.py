@@ -24,11 +24,11 @@ from ros2_bridge.datamodel import (
 # ── Reusable strategies ──────────────────────────────────────────────────────
 
 valid_vehicle_types = st.sampled_from(
-    ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "unknown"]
+    ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'unknown']
 )
-valid_firmwares = st.sampled_from(["px4", "ardupilot"])
+valid_firmwares = st.sampled_from(['px4', 'ardupilot'])
 valid_flight_modes = st.sampled_from(
-    ["MANUAL", "ALTCTL", "POSCTL", "AUTO", "OFFBOARD", "STAB", "UNKNOWN"]
+    ['MANUAL', 'ALTCTL', 'POSCTL', 'AUTO', 'OFFBOARD', 'STAB', 'UNKNOWN']
 )
 
 
@@ -42,14 +42,19 @@ class TestVehiclePoseProperty(unittest.TestCase):
         vehicle_type=valid_vehicle_types,
     )
     def test_valid_params(self, x, y, z, heading, vehicle_id, vehicle_type):
-        p = VehiclePose(x=x, y=y, z=z, heading=heading,
-                         vehicle_id=vehicle_id, vehicle_type=vehicle_type)
+        p = VehiclePose(
+            x=x, y=y, z=z, heading=heading, vehicle_id=vehicle_id, vehicle_type=vehicle_type
+        )
         self.assertEqual(p.x, x)
         self.assertEqual(p.y, y)
 
-    @given(bad_type=st.text().filter(
-        lambda t: t not in ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "unknown"]
-    ))
+    @given(
+        bad_type=st.text().filter(
+            lambda t: (
+                t not in ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'unknown']
+            )
+        )
+    )
     def test_invalid_type_rejected(self, bad_type):
         with self.assertRaises(Exception):
             VehiclePose(vehicle_type=bad_type)
@@ -85,8 +90,11 @@ class TestVehicleStatusProperty(unittest.TestCase):
     )
     def test_valid(self, armed, nav_state, battery_pct, flight_mode, vehicle_id):
         s = VehicleStatus(
-            armed=armed, nav_state=nav_state, battery_pct=battery_pct,
-            flight_mode=flight_mode, vehicle_id=vehicle_id,
+            armed=armed,
+            nav_state=nav_state,
+            battery_pct=battery_pct,
+            flight_mode=flight_mode,
+            vehicle_id=vehicle_id,
         )
         self.assertEqual(s.armed, armed)
         self.assertEqual(s.nav_state, nav_state)
@@ -108,8 +116,12 @@ class TestV2VQualityProperty(unittest.TestCase):
     )
     def test_valid(self, source_id, dest_id, distance_m, rssi_dbm, packet_loss_rate, latency_ms):
         q = V2VQuality(
-            source_id=source_id, dest_id=dest_id, distance_m=distance_m,
-            rssi_dbm=rssi_dbm, packet_loss_rate=packet_loss_rate, latency_ms=latency_ms,
+            source_id=source_id,
+            dest_id=dest_id,
+            distance_m=distance_m,
+            rssi_dbm=rssi_dbm,
+            packet_loss_rate=packet_loss_rate,
+            latency_ms=latency_ms,
         )
         self.assertEqual(q.source_id, source_id)
 
@@ -121,17 +133,21 @@ class TestV2VQualityProperty(unittest.TestCase):
 
 class TestVehicleConfigProperty(unittest.TestCase):
     @given(
-        vtype=st.sampled_from(["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "rock"]),
-        firmware=st.sampled_from(["px4", "ardupilot"]),
+        vtype=st.sampled_from(
+            ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'rock']
+        ),
+        firmware=st.sampled_from(['px4', 'ardupilot']),
         build=st.integers(min_value=0, max_value=10),
     )
     def test_valid(self, vtype, firmware, build):
         c = VehicleConfig(type=vtype, firmware=firmware, build_target=build)
         self.assertEqual(c.type, vtype)
 
-    @given(bad_type=st.text().filter(
-        lambda t: t not in {"x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "rock"}
-    ))
+    @given(
+        bad_type=st.text().filter(
+            lambda t: t not in {'x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'rock'}
+        )
+    )
     def test_invalid_type_rejected(self, bad_type):
         with self.assertRaises(Exception):
             VehicleConfig(type=bad_type)

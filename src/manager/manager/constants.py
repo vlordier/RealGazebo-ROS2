@@ -4,11 +4,11 @@ These are safe to import without ROS2 dependencies.
 """
 
 KEY_BINDINGS = {
-    'a': "ARM",
-    'o': "OFFBOARD",
-    't': "TAKEOFF",
-    's': "START",
-    'd': "DISARM",
+    'a': 'ARM',
+    'o': 'OFFBOARD',
+    't': 'TAKEOFF',
+    's': 'START',
+    'd': 'DISARM',
 }
 
 USAGE_MESSAGE = """
@@ -19,4 +19,4 @@ USAGE_MESSAGE = """
   d : disarm
 """
 
-MAIN_CMD_TOPIC_TEMPLATE = "vehicle{i}/manager/in/main_cmd"
+MAIN_CMD_TOPIC_TEMPLATE = 'vehicle{i}/manager/in/main_cmd'

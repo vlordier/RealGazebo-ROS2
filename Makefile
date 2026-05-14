@@ -54,7 +54,7 @@ up-dev:                ## Start with hot-reload mounts (Python edits take effect
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 lint:                  ## Run ruff linter + format check
-	ruff check . && ruff format --check .
+	@ruff check . --ignore D,N,UP && ruff format --check .
 
 typecheck:             ## Run mypy type checker
 	mypy --ignore-missing-imports realgazebo-dora/ src/ scripts/

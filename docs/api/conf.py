@@ -1,4 +1,5 @@
 """Sphinx configuration for RealGazebo API reference."""
+
 import os
 import sys
 
@@ -10,7 +11,8 @@ sys.path.insert(0, os.path.abspath('../../src/image_viewer'))
 project = 'RealGazebo API'
 copyright = '2025, SUV-Lab'
 author = 'SUV-Lab'
-version = open('../../.version').read().strip() if os.path.exists('../../.version') else '0.1.0'
+with open('../../.version') as f:
+    version = f.read().strip() if os.path.exists('../../.version') else '0.1.0'
 
 extensions = [
     'sphinx.ext.autodoc',

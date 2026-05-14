@@ -41,7 +41,7 @@ class TestVehiclePoseContract(unittest.TestCase):
     def test_ue5_packet_pose_values(self):
         p = VehiclePose(x=10.5, y=-20.3, z=-5.0, qx=0.1, qy=0.2, qz=0.3, qw=0.9)
         packet = p.to_ue5_packet()
-        values = struct.unpack("<7f", packet[3:31])
+        values = struct.unpack('<7f', packet[3:31])
         self.assertAlmostEqual(values[0], 10.5, places=5)
         self.assertAlmostEqual(values[1], -20.3, places=5)
         self.assertAlmostEqual(values[2], -5.0, places=5)
@@ -51,8 +51,9 @@ class TestVehiclePoseContract(unittest.TestCase):
         self.assertAlmostEqual(values[6], 0.9, places=5)
 
     def test_roundtrip(self):
-        p1 = VehiclePose(x=1.0, y=2.0, z=-3.0, qx=0.0, qy=0.0, qz=0.0, qw=1.0,
-                          vehicle_num=0, vehicle_code=0)
+        p1 = VehiclePose(
+            x=1.0, y=2.0, z=-3.0, qx=0.0, qy=0.0, qz=0.0, qw=1.0, vehicle_num=0, vehicle_code=0
+        )
         packet = p1.to_ue5_packet()
         p2 = VehiclePose.from_ue5_packet(packet)
         self.assertIsNotNone(p2)
@@ -61,7 +62,7 @@ class TestVehiclePoseContract(unittest.TestCase):
         self.assertAlmostEqual(p2.z, p1.z)
 
     def test_from_invalid_packet(self):
-        result = VehiclePose.from_ue5_packet(b"")
+        result = VehiclePose.from_ue5_packet(b'')
         self.assertIsNone(result)
 
     def test_parse_ue5_dispatcher(self):
@@ -83,7 +84,7 @@ class TestMotorRPMContract(unittest.TestCase):
         packet = r.to_ue5_packet()
         # Header (3) + 4 floats (16) = 19 bytes
         self.assertEqual(len(packet), 19)
-        values = struct.unpack("<4f", packet[3:19])
+        values = struct.unpack('<4f', packet[3:19])
         self.assertAlmostEqual(values[0], 1000.0)
         self.assertAlmostEqual(values[3], 4000.0)
 
@@ -107,10 +108,12 @@ class TestSimResetContract(unittest.TestCase):
 class TestDataTypes(unittest.TestCase):
     def test_all_types_have_models(self):
         from ros2_bridge.contracts import UE5_DATA_TYPES
+
         for dtype, model in UE5_DATA_TYPES.items():
             with self.subTest(dtype=dtype):
-                self.assertTrue(issubclass(model, VehiclePose) or
-                                issubclass(model, (MotorRPM, SimReset)))
+                self.assertTrue(
+                    issubclass(model, VehiclePose) or issubclass(model, (MotorRPM, SimReset))
+                )
 
 
 if __name__ == '__main__':

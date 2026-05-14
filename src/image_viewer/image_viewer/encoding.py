@@ -25,8 +25,8 @@ MONO_CHANNEL_COUNT = 1
 # (channel_count, cv2_color_conversion_flag | None)
 # None means "already BGR, no conversion needed"
 ENCODING_CONFIG: dict[str, tuple[int, int | None]] = {
-    'rgb8':  (RGB_CHANNEL_COUNT, cv2.COLOR_RGB2BGR),
-    'bgr8':  (RGB_CHANNEL_COUNT, None),
+    'rgb8': (RGB_CHANNEL_COUNT, cv2.COLOR_RGB2BGR),
+    'bgr8': (RGB_CHANNEL_COUNT, None),
     'rgba8': (RGBA_CHANNEL_COUNT, cv2.COLOR_RGBA2BGR),
     'bgra8': (RGBA_CHANNEL_COUNT, cv2.COLOR_BGRA2BGR),
     'mono8': (MONO_CHANNEL_COUNT, None),

@@ -37,7 +37,7 @@ class Vehicle(Enum):
 # Vehicle-specific move distances: some vehicles need smaller offset
 VEHICLE_MOVE_DISTANCES: dict[int, tuple[float, float]] = {
     # system_id: (y_offset, x_offset)
-    9:  (0.0, -MOVE_DISTANCE_EAST_M),
+    9: (0.0, -MOVE_DISTANCE_EAST_M),
     10: (0.0, -MOVE_DISTANCE_EAST_M),
 }
 
@@ -46,10 +46,10 @@ VEHICLE_MOVE_FALLBACK = (-MOVE_DISTANCE_DEFAULT_M, 0.0)
 
 class PX4ROS2(Node):
     def __init__(self):
-        super().__init__("px4_ros2")
+        super().__init__('px4_ros2')
         self.declare_parameter('system_id', 1)
         self.system_id_ = self.get_parameter('system_id').get_parameter_value().integer_value
-        self.declare_parameter('vehicle_type', "iris")
+        self.declare_parameter('vehicle_type', 'iris')
         try:
             self.vehicle_type_ = Vehicle[
                 self.get_parameter('vehicle_type').get_parameter_value().string_value.upper()
@@ -58,17 +58,17 @@ class PX4ROS2(Node):
             self.vehicle_type_ = Vehicle.UNKNOWN
 
         self.get_logger().info(
-            f"[px4] Initialized: system={self.system_id_} type={self.vehicle_type_.name}"
+            f'[px4] Initialized: system={self.system_id_} type={self.vehicle_type_.name}'
         )
 
-        topic_prefix_fmu = f"vehicle{self.system_id_}/fmu/"
-        topic_prefix_manager = f"vehicle{self.system_id_}/manager/"
+        topic_prefix_fmu = f'vehicle{self.system_id_}/fmu/'
+        topic_prefix_manager = f'vehicle{self.system_id_}/manager/'
 
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus,
             f'{topic_prefix_fmu}out/vehicle_status',
             self.vehicle_status_callback,
-            qos_profile_sensor_data
+            qos_profile_sensor_data,
         )
         self.vehicle_status_msg_ = VehicleStatus()
 
@@ -77,26 +77,22 @@ class PX4ROS2(Node):
         self.ocm_publisher_ = self.create_publisher(
             OffboardControlMode,
             f'{topic_prefix_fmu}in/offboard_control_mode',
-            qos_profile_sensor_data
+            qos_profile_sensor_data,
         )
 
         self.traj_setpoint_publisher_ = self.create_publisher(
-            TrajectorySetpoint,
-            f'{topic_prefix_fmu}in/trajectory_setpoint',
-            QOS_DEPTH_DEFAULT
+            TrajectorySetpoint, f'{topic_prefix_fmu}in/trajectory_setpoint', QOS_DEPTH_DEFAULT
         )
 
         self.vehicle_command_publisher_ = self.create_publisher(
-            VehicleCommand,
-            f'{topic_prefix_fmu}in/vehicle_command',
-            QOS_DEPTH_DEFAULT
+            VehicleCommand, f'{topic_prefix_fmu}in/vehicle_command', QOS_DEPTH_DEFAULT
         )
 
         self.vehicle_local_position_subscriber_ = self.create_subscription(
             VehicleLocalPosition,
             f'{topic_prefix_fmu}out/vehicle_local_position',
             self.vehicle_local_position_callback,
-            qos_profile_sensor_data
+            qos_profile_sensor_data,
         )
         self.vehicle_local_position_msg_ = VehicleLocalPosition()
 
@@ -104,21 +100,16 @@ class PX4ROS2(Node):
             VehicleGlobalPosition,
             f'{topic_prefix_fmu}out/vehicle_global_position',
             self.vehicle_global_position_callback,
-            qos_profile_sensor_data
+            qos_profile_sensor_data,
         )
         self.vehicle_global_position_msg_ = VehicleGlobalPosition()
 
         self.main_cmd_subscriber_ = self.create_subscription(
-            String,
-            f'{topic_prefix_manager}in/main_cmd',
-            self.main_cmd_callback,
-            QOS_DEPTH_DEFAULT
+            String, f'{topic_prefix_manager}in/main_cmd', self.main_cmd_callback, QOS_DEPTH_DEFAULT
         )
         self.main_cmd_msg_ = String()
 
-        self.timer_ocm_ = self.create_timer(
-            CONTROL_LOOP_PERIOD_S, self.timer_ocm_callback
-        )
+        self.timer_ocm_ = self.create_timer(CONTROL_LOOP_PERIOD_S, self.timer_ocm_callback)
         self.arrive_target_ = False
 
     def vehicle_local_position_callback(self, msg):
@@ -129,39 +120,30 @@ class PX4ROS2(Node):
 
     def main_cmd_callback(self, msg):
         cmd = msg.data
-        self.get_logger().info(f"[px4] Received command: {cmd}")
+        self.get_logger().info(f'[px4] Received command: {cmd}')
         match cmd:
-            case "ARM":
+            case 'ARM':
                 self.control_arm()
-            case "DISARM":
+            case 'DISARM':
                 self.control_disarm()
-            case "OFFBOARD":
+            case 'OFFBOARD':
                 self.control_offboard()
-            case "TAKEOFF":
+            case 'TAKEOFF':
                 self.control_takeoff(DEFAULT_TAKEOFF_ALTITUDE_M)
-            case "START":
+            case 'START':
                 self._handle_start()
 
     def _handle_start(self):
-        offset_y, offset_x = VEHICLE_MOVE_DISTANCES.get(
-            self.system_id_, VEHICLE_MOVE_FALLBACK
-        )
+        offset_y, offset_x = VEHICLE_MOVE_DISTANCES.get(self.system_id_, VEHICLE_MOVE_FALLBACK)
         pos = self.vehicle_local_position_msg_
-        self.control_setpoint(
-            pos.x + offset_x,
-            pos.y + offset_y,
-            pos.z,
-            pos.heading
-        )
+        self.control_setpoint(pos.x + offset_x, pos.y + offset_y, pos.z, pos.heading)
         self.get_logger().info(
-            f"[px4] START: moving by ({offset_x:.0f}, {offset_y:.0f}) for system {self.system_id_}"
+            f'[px4] START: moving by ({offset_x:.0f}, {offset_y:.0f}) for system {self.system_id_}'
         )
 
     def vehicle_status_callback(self, msg):
         self.vehicle_status_msg_ = msg
-        self.get_logger().debug(
-            f"[px4] Status: nav_state={msg.nav_state} armed={msg.arming_state}"
-        )
+        self.get_logger().debug(f'[px4] Status: nav_state={msg.nav_state} armed={msg.arming_state}')
 
     def timer_ocm_callback(self):
         self.ocm_publisher_.publish(self.ocm_msg_qhac_)
@@ -174,7 +156,7 @@ class PX4ROS2(Node):
         arm_cmd.confirmation = True
         arm_cmd.from_external = True
         self.vehicle_command_publisher_.publish(arm_cmd)
-        self.get_logger().info(f"[px4] ARM system {self.system_id_}")
+        self.get_logger().info(f'[px4] ARM system {self.system_id_}')
 
     def control_takeoff(self, altitude):
         takeoff_cmd = VehicleCommand()
@@ -186,7 +168,7 @@ class PX4ROS2(Node):
         takeoff_cmd.param6 = self.vehicle_global_position_msg_.lon
         takeoff_cmd.param7 = self.vehicle_global_position_msg_.alt + altitude
         self.vehicle_command_publisher_.publish(takeoff_cmd)
-        self.get_logger().info(f"[px4] TAKEOFF {altitude}m")
+        self.get_logger().info(f'[px4] TAKEOFF {altitude}m')
 
     def control_disarm(self):
         disarm_cmd = VehicleCommand()
@@ -195,7 +177,7 @@ class PX4ROS2(Node):
         disarm_cmd.param1 = DISARM_PARAM
         disarm_cmd.confirmation = True
         self.vehicle_command_publisher_.publish(disarm_cmd)
-        self.get_logger().info(f"[px4] DISARM system {self.system_id_}")
+        self.get_logger().info(f'[px4] DISARM system {self.system_id_}')
 
     def control_offboard(self):
         offboard_cmd = VehicleCommand()
@@ -205,7 +187,7 @@ class PX4ROS2(Node):
         offboard_cmd.param2 = PX4_CUSTOM_MAIN_MODE_OFFBOARD
         offboard_cmd.from_external = True
         self.vehicle_command_publisher_.publish(offboard_cmd)
-        self.get_logger().info("[px4] OFFBOARD mode")
+        self.get_logger().info('[px4] OFFBOARD mode')
 
     def control_setpoint(self, x, y, z, heading=None):
         setpoint_cmd = TrajectorySetpoint()
@@ -215,7 +197,7 @@ class PX4ROS2(Node):
         if heading is not None:
             setpoint_cmd.yaw = heading
         self.traj_setpoint_publisher_.publish(setpoint_cmd)
-        self.get_logger().debug(f"[px4] Setpoint ({x:.1f}, {y:.1f}, {z:.1f})")
+        self.get_logger().debug(f'[px4] Setpoint ({x:.1f}, {y:.1f}, {z:.1f})')
 
 
 def main(args=None):
@@ -224,7 +206,7 @@ def main(args=None):
     try:
         rclpy.spin(px4ros2)
     except KeyboardInterrupt:
-        px4ros2.get_logger().info("[px4] Shutting down")
+        px4ros2.get_logger().info('[px4] Shutting down')
     finally:
         px4ros2.destroy_node()
         if rclpy.ok():

@@ -1,6 +1,7 @@
 """Integration tests requiring Docker + running stack.
 Run with: python -m pytest scripts/tests/test_integration.py -m integration
 """
+
 import subprocess
 import unittest
 
@@ -8,7 +9,6 @@ import pytest
 
 
 class TestMultiVehicleIntegration(unittest.TestCase):
-
     @pytest.mark.integration
     def test_docker_reachable(self):
         result = subprocess.run(['docker', 'ps'], capture_output=True, text=True)
@@ -28,5 +28,6 @@ class TestMultiVehicleIntegration(unittest.TestCase):
             ['docker', 'ps', '--format', '{{.Names}}'], capture_output=True, text=True
         )
         names = [n for n in result.stdout.strip().split('\n') if n]
-        self.assertGreater(sum(1 for n in names if 'vehicle_' in n), 0,
-                           f'No vehicle containers. Found: {names}')
+        self.assertGreater(
+            sum(1 for n in names if 'vehicle_' in n), 0, f'No vehicle containers. Found: {names}'
+        )

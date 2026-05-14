@@ -17,6 +17,7 @@ class TestMultiVehicleConfig(unittest.TestCase):
 
     def setUp(self):
         from generate_compose import load_config, parse_spawnpoint
+
         self._load_config = load_config
         self._parse_spawnpoint = parse_spawnpoint
 
@@ -64,6 +65,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
 
     def setUp(self):
         from generate_compose import generate_compose_override, load_config
+
         self._load_config = load_config
         self._generate = generate_compose_override
         self.config = self._load_config(EXAMPLE_YAML)
@@ -99,7 +101,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
             self.assertEqual(
                 svc['networks']['gazebo-network']['ipv4_address'],
                 expected_ip,
-                f'{sname} gazebo IP mismatch'
+                f'{sname} gazebo IP mismatch',
             )
 
     def test_vehicle_network_range(self):
@@ -112,7 +114,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
             self.assertEqual(
                 svc['networks']['vehicle-network']['ipv4_address'],
                 expected_ip,
-                f'{sname} vehicle IP mismatch'
+                f'{sname} vehicle IP mismatch',
             )
 
     def test_firmware_to_command(self):
@@ -137,8 +139,11 @@ class TestMultiVehicleCompose(unittest.TestCase):
 
     def test_jsbsim_no_px4_env_vars(self):
         """JSBSim vehicles do NOT get PX4-specific env vars (same as ArduPilot)."""
-        self.assertNotIn('vehicle_jsbsim', self.compose['services'],
-                         'No JSBSim vehicle in example.yaml; test is coverage placeholder')
+        self.assertNotIn(
+            'vehicle_jsbsim',
+            self.compose['services'],
+            'No JSBSim vehicle in example.yaml; test is coverage placeholder',
+        )
         # If a JSBSim vehicle were added to example.yaml, this would verify:
         # env = self.compose['services']['vehicle_N']['environment']
         # env_str = ' '.join(env)
@@ -163,11 +168,13 @@ class TestMultiVehicleCompose(unittest.TestCase):
             if sname.startswith('vehicle_'):
                 cmd = svc['command']
                 import re
+
                 m = re.search(r'vehicle_type:=(\w+)', cmd)
                 if m:
                     vehicle_types[sname] = m.group(1)
-        self.assertNotIn('rock', vehicle_types.values(),
-                         'Rock should not appear as a vehicle service')
+        self.assertNotIn(
+            'rock', vehicle_types.values(), 'Rock should not appear as a vehicle service'
+        )
 
     def test_all_vehicle_ports_unique(self):
         """No duplicate UDP port mappings."""
@@ -196,8 +203,9 @@ class TestMultiVehicleCompose(unittest.TestCase):
         for sname, svc in self.compose['services'].items():
             if not sname.startswith('vehicle_'):
                 continue
-            self.assertEqual(svc.get('restart'), 'unless-stopped',
-                             f'{sname} missing restart policy')
+            self.assertEqual(
+                svc.get('restart'), 'unless-stopped', f'{sname} missing restart policy'
+            )
 
     def test_logging_prefix_in_command(self):
         """Vehicle commands include [vehicle_N] log prefix."""
@@ -215,6 +223,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
                 continue
             cmd = svc['command']
             import re
+
             m = re.search(r'vehicle_models:=([\w,]+)', cmd)
             self.assertIsNotNone(m, f'{sname} missing vehicle_models')
             models = set(m.group(1).split(','))
@@ -223,10 +232,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
         # All vehicles should have the same model list
         ref_models = next(iter(models_by_vehicle.values()))
         for sname, models in models_by_vehicle.items():
-            self.assertEqual(
-                models, ref_models,
-                f'{sname} vehicle_models differs from reference'
-            )
+            self.assertEqual(models, ref_models, f'{sname} vehicle_models differs from reference')
 
         # All 10 vehicle-model entries present
         self.assertEqual(len(ref_models), 10)
@@ -266,6 +272,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
     def test_px4_path_resolved_from_build_targets(self):
         """Vehicle px4_path comes from build_targets config, not hardcoded."""
         import re
+
         cmd = self.compose['services']['vehicle_0']['command']
         # px4_path should be the resolved path from build_targets[0]
         m = re.search(r'px4_path:=(\S+)', cmd)
@@ -279,11 +286,11 @@ class TestMultiVehicleCompose(unittest.TestCase):
 
         import yaml
         from generate_compose import generate_compose_override
+
         output_path = os.path.join(tempfile.mkdtemp(), 'override.yml')
         with open(output_path, 'w') as f:
             yaml.dump(
-                generate_compose_override(self.config),
-                f, default_flow_style=False, sort_keys=False
+                generate_compose_override(self.config), f, default_flow_style=False, sort_keys=False
             )
         # Read back and validate structure
         with open(output_path) as f:

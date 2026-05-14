@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ── Vehicle Pose ─────────────────────────────────────────────────────────────
 
-PACKED_HEADER_FMT = "<BBB"  # vehicle_num, vehicle_code, data_type (struct.pack)
+PACKED_HEADER_FMT = '<BBB'  # vehicle_num, vehicle_code, data_type (struct.pack)
 
 
 class VehiclePose(BaseModel):
@@ -41,25 +41,33 @@ class VehiclePose(BaseModel):
           header (3 bytes) + 7 floats (x, y, z, qx, qy, qz, qw)
         """
         import struct
+
         header = struct.pack(PACKED_HEADER_FMT, self.vehicle_num, self.vehicle_code, 1)
-        payload = struct.pack("<7f", self.x, self.y, self.z, self.qx, self.qy, self.qz, self.qw)
+        payload = struct.pack('<7f', self.x, self.y, self.z, self.qx, self.qy, self.qz, self.qw)
         return header + payload
 
     def to_json(self) -> bytes:
         return self.model_dump_json().encode()
 
     @classmethod
-    def from_ue5_packet(cls, data: bytes) -> "VehiclePose | None":
+    def from_ue5_packet(cls, data: bytes) -> 'VehiclePose | None':
         """Parse a UDP packet from RealGazebo.cpp."""
         import struct
+
         if len(data) < 3 + 7 * 4:
             return None
         header = struct.unpack(PACKED_HEADER_FMT, data[:3])
-        values = struct.unpack("<7f", data[3:3 + 7 * 4])
+        values = struct.unpack('<7f', data[3 : 3 + 7 * 4])
         return cls(
-            vehicle_num=header[0], vehicle_code=header[1],
-            x=values[0], y=values[1], z=values[2],
-            qx=values[3], qy=values[4], qz=values[5], qw=values[6],
+            vehicle_num=header[0],
+            vehicle_code=header[1],
+            x=values[0],
+            y=values[1],
+            z=values[2],
+            qx=values[3],
+            qy=values[4],
+            qz=values[5],
+            qw=values[6],
         )
 
 
@@ -74,9 +82,10 @@ class MotorRPM(BaseModel):
 
     def to_ue5_packet(self) -> bytes:
         import struct
+
         n = len(self.rpm_values)
         header = struct.pack(PACKED_HEADER_FMT, self.vehicle_num, self.vehicle_code, 2)
-        payload = struct.pack(f"<{n}f", *self.rpm_values)
+        payload = struct.pack(f'<{n}f', *self.rpm_values)
         return header + payload
 
 
@@ -90,6 +99,7 @@ class SimReset(BaseModel):
 
     def to_ue5_packet(self) -> bytes:
         import struct
+
         return struct.pack(PACKED_HEADER_FMT, self.vehicle_num, self.vehicle_code, 4)
 
 
@@ -106,6 +116,7 @@ UE5_DATA_TYPES: dict[int, type[BaseModel]] = {
 def parse_ue5_packet(data: bytes) -> BaseModel | None:
     """Parse any RealGazebo UDP packet into its typed model."""
     import struct
+
     if len(data) < 3:
         return None
     dtype = struct.unpack(PACKED_HEADER_FMT, data[:3])[2]

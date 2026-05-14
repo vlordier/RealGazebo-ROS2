@@ -21,12 +21,14 @@ def launch_setup(context, *args, **kwargs):
             executable='jsbsim_node',
             name=f'jsbsim_{instance_id}',
             namespace=ns,
-            parameters=[{
-                'instance_id': int(instance_id),
-                'aircraft': aircraft,
-                'update_rate': int(update_rate),
-                'frame_id': frame_id,
-            }],
+            parameters=[
+                {
+                    'instance_id': int(instance_id),
+                    'aircraft': aircraft,
+                    'update_rate': int(update_rate),
+                    'frame_id': frame_id,
+                }
+            ],
             output='screen',
         ),
     ]
@@ -34,27 +36,31 @@ def launch_setup(context, *args, **kwargs):
     if gazebo_bridge:
         # Bridge JSBSim pose → Gazebo (ROS publishes, Gazebo subscribes)
         # ] means ROS_TO_GZ direction (JSBSim → Gazebo visual)
-        nodes.append(Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            name=f'jsbsim_gz_bridge_{instance_id}',
-            arguments=[
-                f'/{ns}/pose]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
-                f'/{ns}/pose_ground_truth]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
-                f'/{ns}/velocity]geometry_msgs/msg/TwistStamped@gz.msgs.Twist',
-            ],
-            output='screen',
-        ))
+        nodes.append(
+            Node(
+                package='ros_gz_bridge',
+                executable='parameter_bridge',
+                name=f'jsbsim_gz_bridge_{instance_id}',
+                arguments=[
+                    f'/{ns}/pose]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
+                    f'/{ns}/pose_ground_truth]geometry_msgs/msg/PoseStamped@gz.msgs.Pose',
+                    f'/{ns}/velocity]geometry_msgs/msg/TwistStamped@gz.msgs.Twist',
+                ],
+                output='screen',
+            )
+        )
 
     return nodes
 
 
 def generate_launch_description():
-    return LaunchDescription([
-        DeclareLaunchArgument('instance_id', default_value='0'),
-        DeclareLaunchArgument('aircraft', default_value='c172p'),
-        DeclareLaunchArgument('update_rate', default_value='250'),
-        DeclareLaunchArgument('frame_id', default_value='map'),
-        DeclareLaunchArgument('gazebo_bridge', default_value='true'),
-        OpaqueFunction(function=launch_setup),
-    ])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument('instance_id', default_value='0'),
+            DeclareLaunchArgument('aircraft', default_value='c172p'),
+            DeclareLaunchArgument('update_rate', default_value='250'),
+            DeclareLaunchArgument('frame_id', default_value='map'),
+            DeclareLaunchArgument('gazebo_bridge', default_value='true'),
+            OpaqueFunction(function=launch_setup),
+        ]
+    )

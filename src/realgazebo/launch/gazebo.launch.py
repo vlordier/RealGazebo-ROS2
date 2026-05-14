@@ -32,32 +32,30 @@ def launch_setup(context, *args, **kwargs):
     LaunchConfiguration('unreal_ip').perform(context)
     LaunchConfiguration('unreal_port').perform(context)
 
-    gazebo_path = f"{px4_path}/Tools/simulation/gz"
+    gazebo_path = f'{px4_path}/Tools/simulation/gz'
 
     # Environment variables
     model_path_env = SetEnvironmentVariable(
         'GZ_SIM_RESOURCE_PATH',
-        f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds'
+        f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds',
     )
 
     # Plugin paths - include PX4 plugins and RealGazebo plugins
     plugin_paths = [
-        "$GZ_SIM_SYSTEM_PLUGIN_PATH",
-        f"{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins",
-        f"{current_package_prefix}/lib/realgazebo",
+        '$GZ_SIM_SYSTEM_PLUGIN_PATH',
+        f'{px4_path}/build/px4_sitl_default/src/modules/simulation/gz_plugins',
+        f'{current_package_prefix}/lib/realgazebo',
     ]
-    plugin_path_env = SetEnvironmentVariable(
-        'GZ_SIM_SYSTEM_PLUGIN_PATH',
-        ':'.join(plugin_paths)
-    )
+    plugin_path_env = SetEnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH', ':'.join(plugin_paths))
 
     server_config_env = SetEnvironmentVariable(
-        'GZ_SIM_SERVER_CONFIG_PATH',
-        f"{px4_path}/src/modules/simulation/gz_bridge/server.config"
+        'GZ_SIM_SERVER_CONFIG_PATH', f'{px4_path}/src/modules/simulation/gz_bridge/server.config'
     )
 
     # Generate world file from Jinja template
-    env = Environment(loader=FileSystemLoader(os.path.join(current_package_path, 'models', 'c-track')))
+    env = Environment(
+        loader=FileSystemLoader(os.path.join(current_package_path, 'models', 'c-track'))
+    )
     world_model = env.get_template('model.sdf.jinja')
     output_world = world_model.render(world=world)
     world_model_path = os.path.join(current_package_path, 'models', 'c-track', 'model.sdf')
@@ -73,20 +71,24 @@ def launch_setup(context, *args, **kwargs):
     world_file_path = os.path.join(current_package_path, 'worlds', 'c-track.sdf')
 
     verbose_level = 4 if verbose else 1
-    gz_args = f'--verbose={verbose_level} -r -s {world_file_path}' if headless else f'--verbose={verbose_level} -r {world_file_path}'
+    gz_args = (
+        f'--verbose={verbose_level} -r -s {world_file_path}'
+        if headless
+        else f'--verbose={verbose_level} -r {world_file_path}'
+    )
 
     gazebo_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([gz_sim_pkg, 'launch', 'gz_sim.launch.py'])
         ),
-        launch_arguments={'gz_args': gz_args}.items()
+        launch_arguments={'gz_args': gz_args}.items(),
     )
 
     # Clock bridge for ROS2 time synchronization
     gz_timesync_node = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock']
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
     )
 
     nodes_to_start = [
@@ -108,7 +110,7 @@ def generate_launch_description():
             'headless',
             default_value='true',
             description='Run Gazebo in headless mode (no GUI)',
-            choices=['true', 'false']
+            choices=['true', 'false'],
         )
     )
 
@@ -117,7 +119,7 @@ def generate_launch_description():
             'verbose',
             default_value='false',
             description='Run Gazebo with verbose logging (level 4)',
-            choices=['true', 'false']
+            choices=['true', 'false'],
         )
     )
 
@@ -126,7 +128,7 @@ def generate_launch_description():
             'world',
             default_value='c-track',
             description='World type',
-            choices=['c-track', 'urban', 'vils']
+            choices=['c-track', 'urban', 'vils'],
         )
     )
 
@@ -134,23 +136,19 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'px4_path',
             default_value='/home/user/realgazebo/RealGazebo-PX4',
-            description='Path to PX4-Autopilot build'
+            description='Path to PX4-Autopilot build',
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'unreal_ip',
-            default_value='127.0.0.1',
-            description='IP address of Unreal Engine server'
+            'unreal_ip', default_value='127.0.0.1', description='IP address of Unreal Engine server'
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            'unreal_port',
-            default_value='5005',
-            description='Port of Unreal Engine server'
+            'unreal_port', default_value='5005', description='Port of Unreal Engine server'
         )
     )
 

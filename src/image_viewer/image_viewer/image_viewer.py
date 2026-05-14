@@ -17,7 +17,6 @@ from image_viewer.encoding import (
 
 
 class ImageSubscriber(Node):
-
     def __init__(self):
         super().__init__('image_viewer')
         self.declare_parameter('vehicle_num', 0)
@@ -29,7 +28,7 @@ class ImageSubscriber(Node):
         self.camera_type = self.get_parameter('camera_type').get_parameter_value().string_value
 
         self.get_logger().info(
-            f"[img] Configured: {self.vehicle_type}_{self.vehicle_num} camera={self.camera_type}"
+            f'[img] Configured: {self.vehicle_type}_{self.vehicle_num} camera={self.camera_type}'
         )
 
         receiver_node_name = (
@@ -44,14 +43,14 @@ class ImageSubscriber(Node):
 
         get_state_cli = self.create_client(GetState, f'/{receiver_node_name}/get_state')
         if not get_state_cli.wait_for_service(timeout_sec=GET_STATE_TIMEOUT_S):
-            self.get_logger().warn("[img] GetState service not available, skipping lifecycle")
+            self.get_logger().warn('[img] GetState service not available, skipping lifecycle')
 
         future = get_state_cli.call_async(GetState.Request())
         rclpy.spin_until_future_complete(self, future)
         result = future.result()
         current_state = result.current_state.id if result else State.PRIMARY_STATE_UNKNOWN
 
-        self.get_logger().info(f"[img] image_receiver state: {current_state}")
+        self.get_logger().info(f'[img] image_receiver state: {current_state}')
 
         if current_state == State.PRIMARY_STATE_UNCONFIGURED:
             self._lifecycle_transition(Transition.TRANSITION_CONFIGURE)
@@ -61,14 +60,11 @@ class ImageSubscriber(Node):
         elif current_state == State.PRIMARY_STATE_ACTIVE:
             self.get_logger().info('[img] Already active')
 
-        topic = (
-            f'/vehicle{self.vehicle_num + 1}'
-            f'/camera/{self.camera_type}/image_raw'
-        )
+        topic = f'/vehicle{self.vehicle_num + 1}/camera/{self.camera_type}/image_raw'
         self.subscription = self.create_subscription(
             Image, topic, self.listener_callback, qos_profile_sensor_data
         )
-        self.get_logger().info(f"[img] Subscribed to {topic}")
+        self.get_logger().info(f'[img] Subscribed to {topic}')
 
     def _lifecycle_transition(self, transition_id: int):
         self.req.transition.id = transition_id
@@ -78,9 +74,7 @@ class ImageSubscriber(Node):
 
     def listener_callback(self, msg):
         try:
-            channels, conversion = ENCODING_CONFIG.get(
-                msg.encoding, (RGB_CHANNEL_COUNT, None)
-            )
+            channels, conversion = ENCODING_CONFIG.get(msg.encoding, (RGB_CHANNEL_COUNT, None))
 
             frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(
                 (msg.height, msg.width, channels)
@@ -89,12 +83,12 @@ class ImageSubscriber(Node):
             if conversion is not None:
                 frame = cv2.cvtColor(frame, conversion)
 
-            window_name = f"vehicle{self.vehicle_num + 1}/{self.camera_type}"
+            window_name = f'vehicle{self.vehicle_num + 1}/{self.camera_type}'
             cv2.imshow(window_name, frame)
             cv2.waitKey(OPENCV_WAITKEY_MS)
 
         except Exception as e:
-            self.get_logger().error(f"[img] Display failed: {e}")
+            self.get_logger().error(f'[img] Display failed: {e}')
 
 
 def main(args=None):

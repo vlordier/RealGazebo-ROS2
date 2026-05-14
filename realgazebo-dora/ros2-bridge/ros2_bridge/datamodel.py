@@ -5,7 +5,6 @@ Uses strict mode for type enforcement and frozen=True to prevent
 accidental mutation.
 """
 
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -21,8 +20,8 @@ class VehiclePose(BaseModel):
     heading: float = Field(default=0.0, ge=-6.29, le=6.29)
     vehicle_id: int = Field(default=0, ge=0, le=255)
     vehicle_type: str = Field(
-        default="unknown",
-        pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|unknown)$",
+        default='unknown',
+        pattern=r'^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|unknown)$',
     )
     timestamp_us: int = Field(default=0, ge=0)
 
@@ -30,14 +29,14 @@ class VehiclePose(BaseModel):
     @classmethod
     def z_must_be_ned(cls, v: float) -> float:
         if v > 100.0:
-            raise ValueError(f"z={v} too large — expected NED frame (negative=up)")
+            raise ValueError(f'z={v} too large — expected NED frame (negative=up)')
         return v
 
     def to_json(self) -> bytes:
         return self.model_dump_json().encode()
 
     @classmethod
-    def from_json(cls, data: bytes) -> "VehiclePose":
+    def from_json(cls, data: bytes) -> 'VehiclePose':
         return cls.model_validate_json(data.decode())
 
 
@@ -71,8 +70,8 @@ class VehicleStatus(BaseModel):
     nav_state: int = Field(default=0, ge=0, le=31)
     battery_pct: float = Field(default=100.0, ge=0.0, le=100.0)
     flight_mode: str = Field(
-        default="UNKNOWN",
-        pattern=r"^(MANUAL|ALTCTL|POSCTL|AUTO|OFFBOARD|STAB|UNKNOWN)$",
+        default='UNKNOWN',
+        pattern=r'^(MANUAL|ALTCTL|POSCTL|AUTO|OFFBOARD|STAB|UNKNOWN)$',
     )
     vehicle_id: int = Field(default=0, ge=0, le=255)
 
@@ -103,15 +102,15 @@ class V2VQuality(BaseModel):
     @classmethod
     def rssi_must_be_non_positive(cls, v: float) -> float:
         if v > 0:
-            raise ValueError(f"RSSI must be <= 0 dBm, got {v}")
+            raise ValueError(f'RSSI must be <= 0 dBm, got {v}')
         return v
 
 
 class VehicleConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
-    firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot|jsbsim)$")
+    type: str = Field(pattern=r'^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$')
+    firmware: str = Field(default='px4', pattern=r'^(px4|ardupilot|jsbsim)$')
     build_target: int = Field(default=0, ge=0)
     spawnpoint: tuple[float, float, float, float] = Field(
         default=(0.0, 0.0, 0.0, 0.0),
@@ -119,8 +118,10 @@ class VehicleConfig(BaseModel):
 
     @field_validator('spawnpoint')
     @classmethod
-    def yaw_in_range(cls, v: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    def yaw_in_range(
+        cls, v: tuple[float, float, float, float]
+    ) -> tuple[float, float, float, float]:
         _, _, _, yaw = v
         if abs(yaw) > 6.29:
-            raise ValueError(f"yaw={yaw} out of range [-2pi, 2pi]")
+            raise ValueError(f'yaw={yaw} out of range [-2pi, 2pi]')
         return v

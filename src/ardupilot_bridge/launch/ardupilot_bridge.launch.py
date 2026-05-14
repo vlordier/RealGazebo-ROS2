@@ -9,7 +9,6 @@ Usage:
         instance_id:=0 fcu_url:=udp://127.0.0.1:14550@14555
 """
 
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -29,13 +28,15 @@ def launch_setup(context, *args, **kwargs):
         package='mavros',
         executable='mavros_node',
         namespace=ns,
-        parameters=[{
-            'fcu_url': fcu_url,
-            'gcs_url': gcs_url,
-            'tgt_system': int(tgt_system),
-            'tgt_component': 1,
-            'fcu_protocol': 'v2.0',
-        }],
+        parameters=[
+            {
+                'fcu_url': fcu_url,
+                'gcs_url': gcs_url,
+                'tgt_system': int(tgt_system),
+                'tgt_component': 1,
+                'fcu_protocol': 'v2.0',
+            }
+        ],
         output='screen',
     )
 
@@ -54,11 +55,12 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-    return LaunchDescription([
-        DeclareLaunchArgument('instance_id', default_value='0'),
-        DeclareLaunchArgument('fcu_url',
-            default_value='udp://127.0.0.1:14550@14555'),
-        DeclareLaunchArgument('tgt_system', default_value='1'),
-        DeclareLaunchArgument('gcs_url', default_value=''),
-        OpaqueFunction(function=launch_setup),
-    ])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument('instance_id', default_value='0'),
+            DeclareLaunchArgument('fcu_url', default_value='udp://127.0.0.1:14550@14555'),
+            DeclareLaunchArgument('tgt_system', default_value='1'),
+            DeclareLaunchArgument('gcs_url', default_value=''),
+            OpaqueFunction(function=launch_setup),
+        ]
+    )

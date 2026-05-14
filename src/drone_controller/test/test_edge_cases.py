@@ -22,16 +22,30 @@ class MockNode:
         self._publishers = {}
         self._subscriptions = []
         self._timers = []
-    def declare_parameter(self, n, v): pass
+
+    def declare_parameter(self, n, v):
+        pass
+
     def get_parameter(self, n):
         m = MagicMock()
         m.get_parameter_value.return_value.integer_value = 1
         return m
-    def create_subscription(self, *a, **kw): return MagicMock()
-    def create_publisher(self, *a, **kw): return MagicMock()
-    def create_timer(self, *a, **kw): return MagicMock()
-    def get_logger(self): return MagicMock()
-    def destroy_node(self): pass
+
+    def create_subscription(self, *a, **kw):
+        return MagicMock()
+
+    def create_publisher(self, *a, **kw):
+        return MagicMock()
+
+    def create_timer(self, *a, **kw):
+        return MagicMock()
+
+    def get_logger(self):
+        return MagicMock()
+
+    def destroy_node(self):
+        pass
+
 
 mock_rclpy.node.Node = MockNode
 mock_rclpy.qos.qos_profile_sensor_data = type('QoS', (), {})()
@@ -61,6 +75,7 @@ class MockVehicleStatus:
     ARMING_STATE_DISARMED = 0
     ARMING_STATE_INITED = 2
     ARMING_STATE_STANDBY = 3
+
     def __init__(self, nav=14, arm=1):
         self.nav_state = nav
         self.arming_state = arm
@@ -71,6 +86,7 @@ class MockVehicleCommand:
     VEHICLE_CMD_NAV_TAKEOFF = 22
     VEHICLE_CMD_NAV_LAND = 21
     VEHICLE_CMD_DO_SET_MODE = 176
+
     def __init__(self):
         self.target_system = 0
         self.command = 0
@@ -82,7 +98,9 @@ class MockVehicleCommand:
 
 class MockVehicleLocalPosition:
     def __init__(self, x=0.0, y=0.0, z=-1.0, heading=0.0):
-        self.x = x; self.y = y; self.z = z
+        self.x = x
+        self.y = y
+        self.z = z
         self.heading = heading
         self.timestamp = 0
 
@@ -111,12 +129,14 @@ class MockOffboardControlMode:
 
 
 for name, cls in [
-    ("LogMessage", MagicMock), ("VehicleStatus", MockVehicleStatus),
-    ("OffboardControlMode", MockOffboardControlMode),
-    ("TrajectorySetpoint", MockTrajectorySetpoint),
-    ("VehicleCommandAck", MagicMock), ("VehicleCommand", MockVehicleCommand),
-    ("VehicleLocalPosition", MockVehicleLocalPosition),
-    ("VehicleGlobalPosition", MockVehicleGlobalPosition),
+    ('LogMessage', MagicMock),
+    ('VehicleStatus', MockVehicleStatus),
+    ('OffboardControlMode', MockOffboardControlMode),
+    ('TrajectorySetpoint', MockTrajectorySetpoint),
+    ('VehicleCommandAck', MagicMock),
+    ('VehicleCommand', MockVehicleCommand),
+    ('VehicleLocalPosition', MockVehicleLocalPosition),
+    ('VehicleGlobalPosition', MockVehicleGlobalPosition),
 ]:
     setattr(mock_px4_msgs.msg, name, cls)
 
@@ -164,12 +184,19 @@ class TestNavStateEnum(unittest.TestCase):
 
     def test_all_values_defined(self):
         expected = {
-            "MANUAL": 0, "ALTCTL": 1, "POSCTL": 2, "AUTO_MISSION": 3,
-            "AUTO_LOITER": 4, "AUTO_RTL": 5, "OFFBOARD": 14,
-            "AUTO_TAKEOFF": 17, "AUTO_LAND": 18, "ORBIT": 21,
+            'MANUAL': 0,
+            'ALTCTL': 1,
+            'POSCTL': 2,
+            'AUTO_MISSION': 3,
+            'AUTO_LOITER': 4,
+            'AUTO_RTL': 5,
+            'OFFBOARD': 14,
+            'AUTO_TAKEOFF': 17,
+            'AUTO_LAND': 18,
+            'ORBIT': 21,
         }
         for name, val in expected.items():
-            self.assertEqual(NavState[name].value, val, f"{name}={val}")
+            self.assertEqual(NavState[name].value, val, f'{name}={val}')
 
     def test_no_duplicate_values(self):
         values = [e.value for e in NavState]
@@ -184,9 +211,11 @@ class TestEdgeCases(unittest.TestCase):
     """Test edge cases and boundary conditions."""
 
     def setUp(self):
-        with patch('drone_controller.drone_controller.rclpy'), \
-             patch('drone_controller.drone_controller.Node'), \
-             patch('drone_controller.drone_controller.os'):
+        with (
+            patch('drone_controller.drone_controller.rclpy'),
+            patch('drone_controller.drone_controller.Node'),
+            patch('drone_controller.drone_controller.os'),
+        ):
             self.controller = DroneController()
 
     def test_initial_setpoint_is_zero(self):
@@ -226,8 +255,10 @@ class TestEdgeCases(unittest.TestCase):
 
     def test_mission_skips_if_ticks_out_of_order(self):
         """Mission should only trigger at exact tick counts."""
-        with patch.object(self.controller, 'control_arm') as arm, \
-             patch.object(self.controller, 'control_takeoff') as takeoff:
+        with (
+            patch.object(self.controller, 'control_arm') as arm,
+            patch.object(self.controller, 'control_takeoff') as takeoff,
+        ):
             self.controller.info_count = MissionTick.ARM - 1
             self.controller.vehicle_status_msg_ = MockVehicleStatus()
             self.controller.vehicle_local_position_msg_ = MockVehicleLocalPosition()
@@ -239,17 +270,17 @@ class TestEdgeCases(unittest.TestCase):
             takeoff.assert_called_once()  # 54 -> 55 -> takeoff
 
     def test_last_command_updates(self):
-        self.controller.last_command = "idle"
+        self.controller.last_command = 'idle'
         self.controller.control_arm()
-        self.assertEqual(self.controller.last_command, "arm")
+        self.assertEqual(self.controller.last_command, 'arm')
         self.controller.control_takeoff(10)
-        self.assertEqual(self.controller.last_command, "takeoff")
+        self.assertEqual(self.controller.last_command, 'takeoff')
         self.controller.control_offboard()
-        self.assertEqual(self.controller.last_command, "offboard")
+        self.assertEqual(self.controller.last_command, 'offboard')
         self.controller.control_setpoint(0, 0, 0)
-        self.assertEqual(self.controller.last_command, "move")
+        self.assertEqual(self.controller.last_command, 'move')
         self.controller.control_land()
-        self.assertEqual(self.controller.last_command, "land")
+        self.assertEqual(self.controller.last_command, 'land')
 
 
 if __name__ == '__main__':
