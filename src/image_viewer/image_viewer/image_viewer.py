@@ -10,6 +10,14 @@ from lifecycle_msgs.msg import Transition, State
 import cv2
 import numpy as np
 
+from image_viewer.encoding import (
+    ENCODING_CONFIG, RGB_CHANNEL_COUNT,
+    LIFECYCLE_SERVICE_TIMEOUT_S,
+    GET_STATE_TIMEOUT_S,
+    OPENCV_WAITKEY_MS,
+    resolve_conversion,
+)
+
 
 class ImageSubscriber(Node):
 
@@ -24,84 +32,73 @@ class ImageSubscriber(Node):
         self.camera_type = self.get_parameter('camera_type').get_parameter_value().string_value
 
         self.get_logger().info(
-            f"Configure ImageViewer {self.vehicle_type}_{self.vehicle_num} camera={self.camera_type}"
+            f"[img] Configured: {self.vehicle_type}_{self.vehicle_num} camera={self.camera_type}"
         )
 
         receiver_node_name = (
             f'image_receiver_{self.vehicle_type}_{self.vehicle_num}_{self.camera_type}'
         )
+
         self.cli = self.create_client(ChangeState, f'/{receiver_node_name}/change_state')
-        if not self.cli.wait_for_service(timeout_sec=10.0):
-            self.get_logger().error('Service not available after waiting')
-            raise RuntimeError('Service not available')
+        if not self.cli.wait_for_service(timeout_sec=LIFECYCLE_SERVICE_TIMEOUT_S):
+            raise RuntimeError('ChangeState service not available')
 
         self.req = ChangeState.Request()
 
-        # Query current lifecycle state and perform only necessary transitions
         get_state_cli = self.create_client(GetState, f'/{receiver_node_name}/get_state')
-        get_state_cli.wait_for_service(timeout_sec=5.0)
+        if not get_state_cli.wait_for_service(timeout_sec=GET_STATE_TIMEOUT_S):
+            self.get_logger().warn("[img] GetState service not available, skipping lifecycle")
+
         future = get_state_cli.call_async(GetState.Request())
         rclpy.spin_until_future_complete(self, future)
-        current_state = future.result().current_state.id if future.result() else State.PRIMARY_STATE_UNKNOWN
+        result = future.result()
+        current_state = result.current_state.id if result else State.PRIMARY_STATE_UNKNOWN
 
-        self.get_logger().info(f'image_receiver current state id: {current_state}')
+        self.get_logger().info(f"[img] image_receiver state: {current_state}")
 
         if current_state == State.PRIMARY_STATE_UNCONFIGURED:
-            self.send_request(Transition.TRANSITION_CONFIGURE)
-            self.send_request(Transition.TRANSITION_ACTIVATE)
+            self._lifecycle_transition(Transition.TRANSITION_CONFIGURE)
+            self._lifecycle_transition(Transition.TRANSITION_ACTIVATE)
         elif current_state == State.PRIMARY_STATE_INACTIVE:
-            self.send_request(Transition.TRANSITION_ACTIVATE)
+            self._lifecycle_transition(Transition.TRANSITION_ACTIVATE)
         elif current_state == State.PRIMARY_STATE_ACTIVE:
-            self.get_logger().info('image_receiver already active, skipping lifecycle setup')
+            self.get_logger().info('[img] Already active')
 
         topic = (
             f'/vehicle{self.vehicle_num + 1}'
             f'/camera/{self.camera_type}/image_raw'
         )
         self.subscription = self.create_subscription(
-            Image,
-            topic,
-            self.listener_callback,
-            qos_profile_sensor_data,
+            Image, topic, self.listener_callback, qos_profile_sensor_data
         )
+        self.get_logger().info(f"[img] Subscribed to {topic}")
+
+    def _lifecycle_transition(self, transition_id: int):
+        self.req.transition.id = transition_id
+        future = self.cli.call_async(self.req)
+        rclpy.spin_until_future_complete(self, future)
+        return future.result()
 
     def listener_callback(self, msg):
         try:
-            dtype = np.uint8
-            encoding = msg.encoding
-            if encoding in ('rgb8', 'bgr8'):
-                channels = 3
-            elif encoding in ('rgba8', 'bgra8'):
-                channels = 4
-            elif encoding == 'mono8':
-                channels = 1
-            else:
-                channels = 3
+            channels, conversion_name = ENCODING_CONFIG.get(
+                msg.encoding, (RGB_CHANNEL_COUNT, None)
+            )
+            conversion = resolve_conversion(conversion_name)
 
-            frame = np.frombuffer(msg.data, dtype=dtype).reshape(
+            frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(
                 (msg.height, msg.width, channels)
             )
 
-            if encoding == 'rgb8':
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            elif encoding == 'rgba8':
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
-            elif encoding == 'bgra8':
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+            if conversion is not None:
+                frame = cv2.cvtColor(frame, conversion)
 
-            cv2.imshow(
-                f"vehicle{self.vehicle_num + 1}/{self.camera_type}",
-                frame,
-            )
-            cv2.waitKey(1)
+            window_name = f"vehicle{self.vehicle_num + 1}/{self.camera_type}"
+            cv2.imshow(window_name, frame)
+            cv2.waitKey(OPENCV_WAITKEY_MS)
+
         except Exception as e:
-            self.get_logger().error(f"Failed to display image: {e}")
-
-    def send_request(self, transition_id):
-        self.req.transition.id = transition_id
-        self.future = self.cli.call_async(self.req)
-        rclpy.spin_until_future_complete(self, self.future)
-        return self.future.result()
+            self.get_logger().error(f"[img] Display failed: {e}")
 
 
 def main(args=None):
