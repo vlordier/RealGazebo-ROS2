@@ -1,0 +1,6 @@
+manager.constants
+=================
+
+.. automodule:: manager.constants
+   :members:
+   :undoc-members:

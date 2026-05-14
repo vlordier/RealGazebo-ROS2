@@ -1,0 +1,46 @@
+site_name: RealGazebo
+site_description: Multi-vehicle simulation framework
+site_author: SUV-Lab
+repo_url: https://github.com/vlordier/RealGazebo-ROS2
+repo_name: vlordier/RealGazebo-ROS2
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: teal
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.snippets
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Configuration: getting-started/configuration.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Data Flow: architecture/dataflow.md
+    - Vehicle Types: architecture/vehicles.md
+  - Firmware:
+    - PX4: firmware/px4.md
+    - ArduPilot: firmware/ardupilot.md
+    - JSBSim: firmware/jsbsim.md
+  - Integrations:
+    - Gazebo: integrations/gazebo.md
+    - Unreal Engine 5: integrations/ue5.md
+    - dora-rs: integrations/dora.md
+  - API Reference: https://vlordier.github.io/RealGazebo-ROS2/api/

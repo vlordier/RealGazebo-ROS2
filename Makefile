@@ -82,13 +82,19 @@ ps:
 
 # ── Docs ─────────────────────────────────────────────────────────────────────
 
-.PHONY: docs docs-serve
+.PHONY: docs docs-serve docs-api docs-mkdocs
 
-docs:
-	cd docs && sphinx-build -b html . _build/html 2>/dev/null || echo "sphinx not installed"
+docs: docs-api docs-mkdocs
+	@echo "Both docs built"
+
+docs-api:
+	cd docs/api && sphinx-build -b html . _build/html 2>/dev/null || echo "  Sphinx: not installed"
+
+docs-mkdocs:
+	mkdocs build -q 2>/dev/null && echo "  MkDocs: site/ ready" || echo "  MkDocs: not installed"
 
 docs-serve:
-	cd docs/_build/html && python3 -m http.server 8080
+	cd site && python3 -m http.server 8080
 
 # ── Benchmarks ───────────────────────────────────────────────────────────────
 
