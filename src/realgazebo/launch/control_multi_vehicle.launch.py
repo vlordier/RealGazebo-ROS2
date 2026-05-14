@@ -17,13 +17,13 @@ def launch_setup(context, *args, **kwargs):
     vehicles = 0
     cmd_vel_needed = False
     if topics:
-        for topic_name, topic_type in topics:
+        for topic_name, _topic_type in topics:
             if '/fmu/out/timesync_status' in topic_name:
                 vehicles += 1
 
             if '/cmd_vel' in topic_name:
                 cmd_vel_needed = True
-                
+
     node.destroy_node()
     rclpy.shutdown()
     for i in range(vehicles):
@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
         prefix='xterm -e'
     )
 
-    nodes_to_start = [ 
+    nodes_to_start = [
         *uv_process_list,
         controller_node,
     ]
@@ -51,4 +51,4 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     declared_arguments = []
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([*declared_arguments, OpaqueFunction(function=launch_setup)])

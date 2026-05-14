@@ -21,6 +21,7 @@ PACKED_HEADER_FMT = "<BBB"  # vehicle_num, vehicle_code, data_type (struct.pack)
 
 class VehiclePose(BaseModel):
     """3D pose — shared between ROS2, dora, and UE5."""
+
     model_config = ConfigDict(frozen=True)
 
     x: float = Field(default=0.0, ge=-1e6, le=1e6)
@@ -64,6 +65,7 @@ class VehiclePose(BaseModel):
 
 class MotorRPM(BaseModel):
     """Motor RPM data — shared between ROS2, dora, and UE5."""
+
     model_config = ConfigDict(frozen=True)
 
     vehicle_num: int = Field(default=0, ge=0, le=255)
@@ -80,6 +82,7 @@ class MotorRPM(BaseModel):
 
 class SimReset(BaseModel):
     """Reset signal sent by RealGazebo plugin on configure/shutdown."""
+
     model_config = ConfigDict(frozen=True)
 
     vehicle_num: int = Field(default=0, ge=0, le=255)

@@ -22,11 +22,17 @@ select = [
     "D",   # pydocstyle
     "UP",  # pyupgrade
     "RUF", # ruff-specific
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
 ]
 ignore = [
     "D100",  # Missing docstring in public module (too noisy)
     "D104",  # Missing docstring in public package
     "D107",  # Missing docstring in __init__
+    "B904",  # raise-without-from-inside-except (too noisy in tests)
+    "SIM108", # use ternary operator (prefer explicit if/else)
+    "T201",  # print found (used extensively in CLI scripts)
 ]
 
 [tool.ruff.format]
@@ -36,6 +42,15 @@ line-ending = "lf"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"Makefile" = ["E701", "E702"]
+"src/realgazebo/launch/vehicle.launch.py" = ["E402", "E501"]
+"src/realgazebo/launch/gazebo.launch.py" = ["E402", "E501"]
+"src/jsbsim_bridge/jsbsim_bridge/*" = ["E501"]
+"scripts/tests/benchmark_run.py" = ["E501"]
+"scripts/tests/*" = ["B017", "E501"]
+"src/drone_controller/test/*" = ["E402", "B017"]
+"src/jsbsim_bridge/test/*" = ["B017"]
+"realgazebo-dora/test/*" = ["E402", "B017"]
 
 [tool.mypy]
 python_version = "3.10"

@@ -7,7 +7,6 @@ validated Pydantic data structures into the dora dataflow.
 
 import logging
 import sys
-from typing import Optional
 
 logging.basicConfig(level=logging.INFO, format="%(name)s %(levelname)s %(message)s")
 logger = logging.getLogger("ros2_bridge")
@@ -37,7 +36,7 @@ class ROS2BridgeNode(RclpyNode if HAS_ROS2 else object):
         if HAS_ROS2:
             super().__init__("dora_ros2_bridge")
         self.dora = dora_node
-        self.clock_msg: Optional[String] = None
+        self.clock_msg: String | None = None
 
         if HAS_ROS2:
             self.create_subscription(String, "/clock", self._clock_callback, 10)

@@ -6,7 +6,6 @@ import unittest
 
 import yaml
 
-
 VALID_VEHICLE_TYPES = ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "rock"]
 VALID_FIRMWARES = ["px4", "ardupilot", "jsbsim"]
 
@@ -175,13 +174,11 @@ class TestGenerateComposeCLI(unittest.TestCase):
     maxDiff = None
 
     def test_defaults(self):
-        from generate_compose import parse_args
         # parse_args reads sys.argv; for testing we patched it via the module
         # We test the parser defaults through the main function indirectly
         self.assertTrue(True)  # placeholder — CLI tests need argparse mocks
 
     def test_validate_flag(self):
-        from generate_compose import parse_args
         self.assertTrue(True)  # — validate test, see test_validate_on_example_yaml
 
     def test_image_and_world_override(self):
@@ -198,7 +195,7 @@ class TestGenerateComposeCLI(unittest.TestCase):
 
     def test_validate_on_example_yaml(self):
         """--validate flag works end-to-end with example.yaml."""
-        from generate_compose import load_config, parse_args as _pa
+        from generate_compose import load_config
         example = os.path.join(
             os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
         )

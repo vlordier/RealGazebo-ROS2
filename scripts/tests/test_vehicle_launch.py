@@ -20,9 +20,11 @@ class TestVehicleLaunchConfig(unittest.TestCase):
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id in ('VEHICLE_SPAWN_DELAY_S', 'VEHICLE_ACTION_INTERVAL_S'):
-                        if isinstance(node.value, ast.Constant):
-                            constants[target.id] = node.value.value
+                    if (
+                        isinstance(target, ast.Name)
+                        and target.id in ('VEHICLE_SPAWN_DELAY_S', 'VEHICLE_ACTION_INTERVAL_S')
+                    ) and isinstance(node.value, ast.Constant):
+                        constants[target.id] = node.value.value
 
         self.assertIn('VEHICLE_SPAWN_DELAY_S', constants)
         self.assertIn('VEHICLE_ACTION_INTERVAL_S', constants)
@@ -31,7 +33,6 @@ class TestVehicleLaunchConfig(unittest.TestCase):
 
     def test_launch_arguments_have_defaults_or_required(self):
         """All launch arguments are properly declared (checked via source regex)."""
-        import re
         launch_file = os.path.join(
             os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'launch', 'vehicle.launch.py'
         )
@@ -57,8 +58,8 @@ class TestVehicleLaunchConfig(unittest.TestCase):
 
     def test_firmware_default_removed(self):
         """vehicle.launch.py should NOT have a firmware default_value
-        (single source of truth is generate_compose.py)."""
-        import re
+        (single source of truth is generate_compose.py).
+        """
         launch_file = os.path.join(
             os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'launch', 'vehicle.launch.py'
         )

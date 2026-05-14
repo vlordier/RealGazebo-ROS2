@@ -12,7 +12,9 @@ Usage:
     ros2 launch jsbsim_bridge jsbsim.launch.py instance_id:=0 aircraft:=c172p
 """
 
+import contextlib
 import math
+import sys
 import threading
 
 import rclpy
@@ -143,12 +145,10 @@ class JSBSimBridge(Node):
 
         # Apply control inputs
         with self._controls_lock:
-            for prop, val in zip(CONTROL_PROPERTIES, self._latest_controls):
+            for prop, val in zip(CONTROL_PROPERTIES, self._latest_controls, strict=False):
                 jsb_prop = JSBSIM_PROPERTIES[prop]
-                try:
+                with contextlib.suppress(KeyError):
                     fdm[jsb_prop] = val
-                except KeyError:
-                    pass
 
         fdm.run()
 

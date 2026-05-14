@@ -1,5 +1,4 @@
-"""
-Gazebo-only launch file for RealGazebo multi-container setup.
+"""Gazebo-only launch file for RealGazebo multi-container setup.
 
 This launch file starts only the Gazebo simulator with the world file.
 Vehicles are spawned from separate vehicle containers.
@@ -30,8 +29,8 @@ def launch_setup(context, *args, **kwargs):
     verbose = LaunchConfiguration('verbose').perform(context).lower() == 'true'
     world = LaunchConfiguration('world').perform(context)
     px4_path = LaunchConfiguration('px4_path').perform(context)
-    unreal_ip = LaunchConfiguration('unreal_ip').perform(context)
-    unreal_port = LaunchConfiguration('unreal_port').perform(context)
+    LaunchConfiguration('unreal_ip').perform(context)
+    LaunchConfiguration('unreal_port').perform(context)
 
     gazebo_path = f"{px4_path}/Tools/simulation/gz"
 
@@ -155,4 +154,4 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([*declared_arguments, OpaqueFunction(function=launch_setup)])

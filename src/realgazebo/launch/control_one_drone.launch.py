@@ -13,7 +13,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{'use_sim_time': True}]
     )
 
-    nodes_to_start = [ 
+    nodes_to_start = [
         controller_node,
     ]
 
@@ -22,4 +22,4 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     declared_arguments = []
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([*declared_arguments, OpaqueFunction(function=launch_setup)])

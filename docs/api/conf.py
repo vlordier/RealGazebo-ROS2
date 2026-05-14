@@ -1,5 +1,7 @@
 """Sphinx configuration for RealGazebo API reference."""
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.abspath('../..'))
 sys.path.insert(0, os.path.abspath('../../realgazebo-dora/ros2-bridge'))
 sys.path.insert(0, os.path.abspath('../../src/jsbsim_bridge'))
@@ -8,7 +10,7 @@ sys.path.insert(0, os.path.abspath('../../src/image_viewer'))
 project = 'RealGazebo API'
 copyright = '2025, SUV-Lab'
 author = 'SUV-Lab'
-version = open('../../.version', 'r').read().strip() if os.path.exists('../../.version') else '0.1.0'
+version = open('../../.version').read().strip() if os.path.exists('../../.version') else '0.1.0'
 
 extensions = [
     'sphinx.ext.autodoc',

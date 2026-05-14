@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate docker-compose.override.yml from RealGazebo YAML configuration.
+"""Generate docker-compose.override.yml from RealGazebo YAML configuration.
 
 Called by quickstart.sh or used directly:
     python3 scripts/generate_compose.py src/realgazebo/yaml/example.yaml
@@ -11,17 +10,17 @@ import ast
 import os
 import sys
 import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
-
 
 SUPPORT_OBSTACLE = ['rock']
 
 
 class VehicleEntry(BaseModel):
     """Validated vehicle entry from YAML configuration."""
+
     type: str = Field(pattern=r"^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$")
     firmware: str = Field(default="px4", pattern=r"^(px4|ardupilot|jsbsim)$")
     build_target: int = Field(default=0, ge=0)
@@ -55,7 +54,7 @@ def parse_args() -> argparse.Namespace:
 
 def load_config(config_path: str) -> dict:
     """Load and validate vehicle configuration from YAML file."""
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
     if config is None:
         raise ValueError(f"Empty or invalid YAML file: {config_path}")
@@ -75,7 +74,7 @@ def load_config(config_path: str) -> dict:
     return config
 
 
-def parse_spawnpoint(spawnpoint_str: Any) -> List[float]:
+def parse_spawnpoint(spawnpoint_str: Any) -> list[float]:
     """Parse spawnpoint from string tuple format: (x, y, z, yaw)"""
     try:
         if isinstance(spawnpoint_str, str):

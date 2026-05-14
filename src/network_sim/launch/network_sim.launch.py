@@ -6,7 +6,6 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     """Launch vehicle network simulator (V2V + TC controller)."""
-
     # Launch arguments
     instance_id_arg = DeclareLaunchArgument(
         'instance_id',

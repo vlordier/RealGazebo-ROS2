@@ -1,10 +1,14 @@
 """Benchmark tests for RealGazebo data models and network_sim performance."""
 
-import time
-import sys
 import os
+import sys
+import time
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'realgazebo-dora', 'ros2-bridge'))
+sys.path.insert(
+    0, os.path.join(
+        os.path.dirname(__file__), '..', '..', 'realgazebo-dora', 'ros2-bridge'
+    )
+)
 
 from ros2_bridge.datamodel import V2VQuality, VehiclePose
 

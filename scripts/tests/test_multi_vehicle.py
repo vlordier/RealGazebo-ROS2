@@ -7,9 +7,6 @@ Integration tests (marked @pytest.mark.integration) require Docker + running sta
 import os
 import unittest
 
-import pytest
-
-
 EXAMPLE_YAML = os.path.join(
     os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
 )
@@ -18,7 +15,7 @@ EXAMPLE_YAML = os.path.join(
 class TestMultiVehicleConfig(unittest.TestCase):
     """Validate that example.yaml loads correctly with all 10 vehicles."""
 
-    def setUp(self):  # noqa: D102
+    def setUp(self):
         from generate_compose import load_config, parse_spawnpoint
         self._load_config = load_config
         self._parse_spawnpoint = parse_spawnpoint
@@ -65,7 +62,7 @@ class TestMultiVehicleConfig(unittest.TestCase):
 class TestMultiVehicleCompose(unittest.TestCase):
     """Validate docker-compose generation for multi-vehicle config."""
 
-    def setUp(self):  # noqa: D102
+    def setUp(self):
         from generate_compose import generate_compose_override, load_config
         self._load_config = load_config
         self._generate = generate_compose_override
@@ -87,7 +84,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
         """No two services share the same IP."""
         all_ips = {}
         for sname, svc in self.compose['services'].items():
-            for net, netcfg in svc.get('networks', {}).items():
+            for _net, netcfg in svc.get('networks', {}).items():
                 ip = netcfg['ipv4_address']
                 self.assertNotIn(ip, all_ips, f'IP {ip} reused by {sname}')
                 all_ips[ip] = sname
@@ -279,6 +276,7 @@ class TestMultiVehicleCompose(unittest.TestCase):
     def test_pipeline_end_to_end(self):
         """End-to-end pipeline: YAML -> compose -> override file is valid YAML."""
         import tempfile
+
         import yaml
         from generate_compose import generate_compose_override
         output_path = os.path.join(tempfile.mkdtemp(), 'override.yml')

@@ -1,5 +1,4 @@
-"""
-Vehicle launch file for RealGazebo multi-container setup.
+"""Vehicle launch file for RealGazebo multi-container setup.
 
 This launch file starts a single vehicle instance with:
 - MicroXRCEAgent (DDS bridge)
@@ -503,4 +502,4 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([*declared_arguments, OpaqueFunction(function=launch_setup)])
