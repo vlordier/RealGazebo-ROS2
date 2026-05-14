@@ -1,13 +1,10 @@
 """Tests for generate_compose.py config loading and YAML validation."""
 
 import os
-import sys
 import tempfile
 import unittest
 
 import yaml
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 
 
 VALID_VEHICLE_TYPES = ["x500", "x500_lidar_2d", "lc_62", "rover_ackermann", "boat", "rock"]

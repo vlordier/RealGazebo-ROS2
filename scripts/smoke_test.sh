@@ -3,7 +3,7 @@
 # Returns 0 if healthy, 1 otherwise.
 # Usage: bash scripts/smoke_test.sh
 
-set -e
+set -euo pipefail
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'

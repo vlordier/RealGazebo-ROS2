@@ -9,7 +9,7 @@
 #   5. Runs smoke test
 #   6. Shows next steps
 
-set -e
+set -euo pipefail
 
 CLEANUP() {
     docker compose down 2>/dev/null || true

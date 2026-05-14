@@ -5,12 +5,9 @@ Integration tests (marked @pytest.mark.integration) require Docker + running sta
 """
 
 import os
-import sys
 import unittest
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 
 
 EXAMPLE_YAML = os.path.join(

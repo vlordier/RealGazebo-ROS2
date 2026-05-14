@@ -1,5 +1,5 @@
 # ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
-.PHONY: setup build up test logs down
+.PHONY: setup build up down test smoke-test logs help
 
 setup:                 ## One-command: install deps + init submodules + pre-commit
 	git submodule update --init --recursive --depth 1 2>/dev/null || git submodule update --init --recursive

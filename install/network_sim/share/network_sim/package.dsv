@@ -1,0 +1,5 @@
+source;share/network_sim/local_setup.bash
+source;share/network_sim/local_setup.dsv
+source;share/network_sim/local_setup.ps1
+source;share/network_sim/local_setup.sh
+source;share/network_sim/local_setup.zsh

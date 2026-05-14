@@ -51,15 +51,13 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = [
-    "src/manager/test",
-    "src/drone_controller/test",
-    "src/image_viewer/test",
+    "scripts/tests",
     "src/jsbsim_bridge/test",
     "realgazebo-dora/test",
-    "scripts/tests",
 ]
 python_files = ["test_*.py"]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "integration: tests that require Docker and a running simulation stack",
 ]
+asyncio_mode = "auto"

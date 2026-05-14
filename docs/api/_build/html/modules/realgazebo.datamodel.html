@@ -1,0 +1,555 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>realgazebo.datamodel &mdash; RealGazebo API  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="realgazebo.contracts" href="realgazebo.contracts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            RealGazebo API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Packages</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="realgazebo.contracts.html">realgazebo.contracts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">realgazebo.datamodel</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose"><code class="docutils literal notranslate"><span class="pre">VehiclePose</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.model_config"><code class="docutils literal notranslate"><span class="pre">VehiclePose.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.x"><code class="docutils literal notranslate"><span class="pre">VehiclePose.x</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.y"><code class="docutils literal notranslate"><span class="pre">VehiclePose.y</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.z"><code class="docutils literal notranslate"><span class="pre">VehiclePose.z</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.vx"><code class="docutils literal notranslate"><span class="pre">VehiclePose.vx</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.vy"><code class="docutils literal notranslate"><span class="pre">VehiclePose.vy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.vz"><code class="docutils literal notranslate"><span class="pre">VehiclePose.vz</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.heading"><code class="docutils literal notranslate"><span class="pre">VehiclePose.heading</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.vehicle_id"><code class="docutils literal notranslate"><span class="pre">VehiclePose.vehicle_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.vehicle_type"><code class="docutils literal notranslate"><span class="pre">VehiclePose.vehicle_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.timestamp_us"><code class="docutils literal notranslate"><span class="pre">VehiclePose.timestamp_us</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.z_must_be_ned"><code class="docutils literal notranslate"><span class="pre">VehiclePose.z_must_be_ned()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.to_json"><code class="docutils literal notranslate"><span class="pre">VehiclePose.to_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose.from_json"><code class="docutils literal notranslate"><span class="pre">VehiclePose.from_json()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock"><code class="docutils literal notranslate"><span class="pre">SimulationClock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.model_config"><code class="docutils literal notranslate"><span class="pre">SimulationClock.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.sec"><code class="docutils literal notranslate"><span class="pre">SimulationClock.sec</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.nsec"><code class="docutils literal notranslate"><span class="pre">SimulationClock.nsec</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.real_sec"><code class="docutils literal notranslate"><span class="pre">SimulationClock.real_sec</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.real_nsec"><code class="docutils literal notranslate"><span class="pre">SimulationClock.real_nsec</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.sim_time_s"><code class="docutils literal notranslate"><span class="pre">SimulationClock.sim_time_s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.real_time_s"><code class="docutils literal notranslate"><span class="pre">SimulationClock.real_time_s</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.SimulationClock.speed_factor"><code class="docutils literal notranslate"><span class="pre">SimulationClock.speed_factor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus"><code class="docutils literal notranslate"><span class="pre">VehicleStatus</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.model_config"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.armed"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.armed</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.nav_state"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.nav_state</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.battery_pct"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.battery_pct</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.flight_mode"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.flight_mode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.vehicle_id"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.vehicle_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.to_json"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.to_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleStatus.normalize_mode"><code class="docutils literal notranslate"><span class="pre">VehicleStatus.normalize_mode()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality"><code class="docutils literal notranslate"><span class="pre">V2VQuality</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.model_config"><code class="docutils literal notranslate"><span class="pre">V2VQuality.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.source_id"><code class="docutils literal notranslate"><span class="pre">V2VQuality.source_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.dest_id"><code class="docutils literal notranslate"><span class="pre">V2VQuality.dest_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.distance_m"><code class="docutils literal notranslate"><span class="pre">V2VQuality.distance_m</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.rssi_dbm"><code class="docutils literal notranslate"><span class="pre">V2VQuality.rssi_dbm</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.packet_loss_rate"><code class="docutils literal notranslate"><span class="pre">V2VQuality.packet_loss_rate</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.latency_ms"><code class="docutils literal notranslate"><span class="pre">V2VQuality.latency_ms</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.jitter_ms"><code class="docutils literal notranslate"><span class="pre">V2VQuality.jitter_ms</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.to_json"><code class="docutils literal notranslate"><span class="pre">V2VQuality.to_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.V2VQuality.rssi_must_be_non_positive"><code class="docutils literal notranslate"><span class="pre">V2VQuality.rssi_must_be_non_positive()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig"><code class="docutils literal notranslate"><span class="pre">VehicleConfig</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.model_config"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.model_config</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.type"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.firmware"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.firmware</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.build_target"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.build_target</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.spawnpoint"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.spawnpoint</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ros2_bridge.datamodel.VehicleConfig.yaw_in_range"><code class="docutils literal notranslate"><span class="pre">VehicleConfig.yaw_in_range()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">RealGazebo API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">realgazebo.datamodel</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/realgazebo.datamodel.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ros2_bridge.datamodel">
+<span id="realgazebo-datamodel"></span><h1>realgazebo.datamodel<a class="headerlink" href="#module-ros2_bridge.datamodel" title="Link to this heading"></a></h1>
+<p>Pydantic v2 data models for RealGazebo dora-rs dataflow.</p>
+<p>Provides validated, immutable data structures with field constraints.
+Uses strict mode for type enforcement and frozen=True to prevent
+accidental mutation.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ros2_bridge.datamodel.</span></span><span class="sig-name descname"><span class="pre">VehiclePose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehiclePose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/base_model/#pydantic.BaseModel" title="(in Pydantic v0.0.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>z</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>vx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>vy</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>vz</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>heading</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>vehicle_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>vehicle_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>timestamp_us</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/config/#pydantic.config.ConfigDict" title="(in Pydantic v0.0.0)"><span class="pre">ConfigDict</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'frozen':</span> <span class="pre">True,</span> <span class="pre">'strict':</span> <span class="pre">True}</span></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.x">
+<span class="sig-name descname"><span class="pre">x</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.x" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.y">
+<span class="sig-name descname"><span class="pre">y</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.y" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.z">
+<span class="sig-name descname"><span class="pre">z</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.z" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.vx">
+<span class="sig-name descname"><span class="pre">vx</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.vx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.vy">
+<span class="sig-name descname"><span class="pre">vy</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.vy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.vz">
+<span class="sig-name descname"><span class="pre">vz</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.vz" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.heading">
+<span class="sig-name descname"><span class="pre">heading</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.heading" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.vehicle_id">
+<span class="sig-name descname"><span class="pre">vehicle_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.vehicle_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.vehicle_type">
+<span class="sig-name descname"><span class="pre">vehicle_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.vehicle_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.timestamp_us">
+<span class="sig-name descname"><span class="pre">timestamp_us</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.timestamp_us" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.z_must_be_ned">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">z_must_be_ned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehiclePose.z_must_be_ned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.z_must_be_ned" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehiclePose.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.to_json" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehiclePose.from_json">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehiclePose.from_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehiclePose.from_json" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#ros2_bridge.datamodel.VehiclePose" title="ros2_bridge.datamodel.VehiclePose"><code class="xref py py-class docutils literal notranslate"><span class="pre">VehiclePose</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><em>bytes</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ros2_bridge.datamodel.</span></span><span class="sig-name descname"><span class="pre">SimulationClock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#SimulationClock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/base_model/#pydantic.BaseModel" title="(in Pydantic v0.0.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>nsec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>real_sec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>real_nsec</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/config/#pydantic.config.ConfigDict" title="(in Pydantic v0.0.0)"><span class="pre">ConfigDict</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'frozen':</span> <span class="pre">True}</span></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.sec">
+<span class="sig-name descname"><span class="pre">sec</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.sec" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.nsec">
+<span class="sig-name descname"><span class="pre">nsec</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.nsec" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.real_sec">
+<span class="sig-name descname"><span class="pre">real_sec</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.real_sec" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.real_nsec">
+<span class="sig-name descname"><span class="pre">real_nsec</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.real_nsec" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.sim_time_s">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sim_time_s</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.sim_time_s" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.real_time_s">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">real_time_s</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.real_time_s" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.SimulationClock.speed_factor">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">speed_factor</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.SimulationClock.speed_factor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ros2_bridge.datamodel.</span></span><span class="sig-name descname"><span class="pre">VehicleStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehicleStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/base_model/#pydantic.BaseModel" title="(in Pydantic v0.0.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>armed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>)</p></li>
+<li><p><strong>nav_state</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>battery_pct</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>flight_mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>vehicle_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/config/#pydantic.config.ConfigDict" title="(in Pydantic v0.0.0)"><span class="pre">ConfigDict</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'frozen':</span> <span class="pre">True}</span></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.armed">
+<span class="sig-name descname"><span class="pre">armed</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.armed" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.nav_state">
+<span class="sig-name descname"><span class="pre">nav_state</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.nav_state" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.battery_pct">
+<span class="sig-name descname"><span class="pre">battery_pct</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.battery_pct" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.flight_mode">
+<span class="sig-name descname"><span class="pre">flight_mode</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.flight_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.vehicle_id">
+<span class="sig-name descname"><span class="pre">vehicle_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.vehicle_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehicleStatus.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.to_json" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleStatus.normalize_mode">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">normalize_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehicleStatus.normalize_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehicleStatus.normalize_mode" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ros2_bridge.datamodel.</span></span><span class="sig-name descname"><span class="pre">V2VQuality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#V2VQuality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/base_model/#pydantic.BaseModel" title="(in Pydantic v0.0.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>dest_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>distance_m</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>rssi_dbm</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>packet_loss_rate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>latency_ms</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>jitter_ms</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/config/#pydantic.config.ConfigDict" title="(in Pydantic v0.0.0)"><span class="pre">ConfigDict</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'frozen':</span> <span class="pre">True,</span> <span class="pre">'strict':</span> <span class="pre">True}</span></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.source_id">
+<span class="sig-name descname"><span class="pre">source_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.source_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.dest_id">
+<span class="sig-name descname"><span class="pre">dest_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.dest_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.distance_m">
+<span class="sig-name descname"><span class="pre">distance_m</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.distance_m" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.rssi_dbm">
+<span class="sig-name descname"><span class="pre">rssi_dbm</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.rssi_dbm" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.packet_loss_rate">
+<span class="sig-name descname"><span class="pre">packet_loss_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.packet_loss_rate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.latency_ms">
+<span class="sig-name descname"><span class="pre">latency_ms</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.latency_ms" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.jitter_ms">
+<span class="sig-name descname"><span class="pre">jitter_ms</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.jitter_ms" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.to_json">
+<span class="sig-name descname"><span class="pre">to_json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#V2VQuality.to_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.to_json" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.V2VQuality.rssi_must_be_non_positive">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">rssi_must_be_non_positive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#V2VQuality.rssi_must_be_non_positive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.V2VQuality.rssi_must_be_non_positive" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">ros2_bridge.datamodel.</span></span><span class="sig-name descname"><span class="pre">VehicleConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehicleConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/base_model/#pydantic.BaseModel" title="(in Pydantic v0.0.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>firmware</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>build_target</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>spawnpoint</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.14)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://pydantic.dev/docs/validation/latest/api/pydantic/config/#pydantic.config.ConfigDict" title="(in Pydantic v0.0.0)"><span class="pre">ConfigDict</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'frozen':</span> <span class="pre">True}</span></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.type">
+<span class="sig-name descname"><span class="pre">type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.firmware">
+<span class="sig-name descname"><span class="pre">firmware</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.firmware" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.build_target">
+<span class="sig-name descname"><span class="pre">build_target</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.build_target" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.spawnpoint">
+<span class="sig-name descname"><span class="pre">spawnpoint</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.spawnpoint" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ros2_bridge.datamodel.VehicleConfig.yaw_in_range">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">yaw_in_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ros2_bridge/datamodel.html#VehicleConfig.yaw_in_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ros2_bridge.datamodel.VehicleConfig.yaw_in_range" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>v</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="realgazebo.contracts.html" class="btn btn-neutral float-left" title="realgazebo.contracts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, SUV-Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
