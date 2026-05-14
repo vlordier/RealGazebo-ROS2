@@ -12,13 +12,15 @@ Generate docker-compose.override.yml from existing RealGazebo YAML configuration
 ########################################################################################
 
 This script is called internally by start_compose_simulation.sh.
-It reads the existing vehicle YAML format (same as realgazebo.launch.py)
+It reads the existing vehicle YAML format (same as vehicle.launch.py)
 and generates docker-compose.override.yml with vehicle services and networks.
 """
 
 import argparse
 import ast
 import os
+import sys
+import warnings
 
 import yaml
 from pydantic import BaseModel, Field
@@ -39,7 +41,7 @@ def parse_args():
     )
     parser.add_argument(
         'config_file',
-        help='Path to vehicle YAML configuration file (same format as realgazebo.launch.py)'
+        help='Path to vehicle YAML configuration file (same format as vehicle.launch.py)'
     )
     parser.add_argument(
         'output_file',
@@ -87,8 +89,23 @@ def load_config(config_path):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
+    if config is None:
+        raise ValueError(f"Empty or invalid YAML file: {config_path}")
+
+    # Accept both build_targets (new) and px4_target (deprecated)
+    if 'px4_target' in config and 'build_targets' not in config:
+        warnings.warn(
+            "YAML key 'px4_target' is deprecated, use 'build_targets' instead",
+            DeprecationWarning, stacklevel=2
+        )
+        config['build_targets'] = config.pop('px4_target')
+
     vehicles = config.get('vehicles', {})
     for vid, v in vehicles.items():
+        if not isinstance(v, dict):
+            raise ValueError(f"Vehicle {vid}: expected a mapping, got {type(v).__name__}")
+        if 'type' not in v:
+            raise ValueError(f"Vehicle {vid}: missing required field 'type'")
         VehicleEntry(**v)  # validates; raises on bad config
 
     return config
@@ -109,7 +126,7 @@ def parse_spawnpoint(spawnpoint_str):
 
 
 def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_port='5005',
-                              world='c-track', headless=True, image='aware4docker/realgazebo:1.2'):
+                              world='c-track', headless=True, image='realgazebo:base'):
     """Generate docker-compose.override.yml content from existing YAML format"""
 
     compose = {
@@ -117,7 +134,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     }
 
     # Parse existing format:
-    # px4_target:
+    # build_targets:
     #   0: /path/to/PX4
     # vehicles:
     #   0:
@@ -125,7 +142,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
     #     build_target: 0
     #     spawnpoint: (x, y, z, yaw)
 
-    config.get('px4_target', {})
+    config.get('build_targets', {})
     vehicles = config.get('vehicles', {})
 
     # Obstacles are not included in vehicle containers (they spawn in gazebo)
@@ -145,6 +162,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
 
         # Skip obstacles - they're handled by gazebo container
         if vtype in support_obstacle:
+            print(f"  [SKIP] vehicle_{vid}: type '{vtype}' is an obstacle, handled by Gazebo container")
             continue
 
         vehicle.get('build_target')

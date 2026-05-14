@@ -11,7 +11,8 @@ build:                 ## Build the base Docker image (ROS2 + Gazebo, ~10 min)
 	docker build -f docker/Dockerfile.base -t realgazebo:base .
 
 up:                    ## Start simulation with default config
-	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>/dev/null
+	@echo "=== Generating compose override ==="
+	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
 	docker compose up -d
 	@echo "Waiting for Gazebo..."; sleep 5
 	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."

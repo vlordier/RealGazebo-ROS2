@@ -28,7 +28,7 @@ class TestGenerateCompose(unittest.TestCase):
         for v in vehicles.values():
             if "spawnpoint" in v and isinstance(v["spawnpoint"], (list, tuple)):
                 v["spawnpoint"] = f"({', '.join(map(str, v['spawnpoint']))})"
-        config = {"px4_target": {0: "/some/path"}, "vehicles": vehicles}
+        config = {"build_targets": {0: "/some/path"}, "vehicles": vehicles}
         path = os.path.join(tempfile.mkdtemp(), "config.yaml")
         with open(path, "w") as f:
             yaml.dump(config, f)
@@ -42,7 +42,7 @@ class TestGenerateCompose(unittest.TestCase):
             self.skipTest("example.yaml not found")
         config = self.load_config(path)
         self.assertIn("vehicles", config)
-        self.assertIn("px4_target", config)
+        self.assertIn("build_targets", config)
 
     def test_valid_vehicle_types(self):
         vehicles = {}
@@ -117,6 +117,60 @@ class TestGenerateCompose(unittest.TestCase):
         path, _ = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(config["vehicles"][0]["type"], "rock")
+
+    def test_build_targets_key(self):
+        """Config with 'build_targets' key (new name) loads correctly."""
+        vehicles = {0: {"type": "x500", "build_target": 0, "spawnpoint": "(0, 0, 0, 0)"}}
+        config_dict = {"build_targets": {0: "/some/path"}, "vehicles": vehicles}
+        path = os.path.join(tempfile.mkdtemp(), "config.yaml")
+        with open(path, "w") as f:
+            yaml.dump(config_dict, f, default_flow_style=False)
+        config = self.load_config(path)
+        self.assertIn("build_targets", config)
+        self.assertNotIn("px4_target", config)
+
+    def test_empty_config_raises(self):
+        """Empty or missing YAML content raises."""
+        import json
+        path = os.path.join(tempfile.mkdtemp(), "empty.yaml")
+        with open(path, "w") as f:
+            f.write("")
+        with self.assertRaises(Exception) as ctx:
+            self.load_config(path)
+        self.assertIn("Empty", str(ctx.exception))
+
+    def test_missing_type_raises(self):
+        """Vehicle entry without a 'type' field raises."""
+        vehicles = {0: {"build_target": 0, "spawnpoint": (0, 0, 0, 0)}}
+        path, _ = self._make_config(vehicles)
+        with self.assertRaises(Exception) as ctx:
+            self.load_config(path)
+        self.assertIn("type", str(ctx.exception))
+
+    def test_non_dict_vehicle_raises(self):
+        """Vehicle entry that isn't a mapping raises."""
+        vehicles = {0: "not_a_dict"}
+        path, _ = self._make_config(vehicles)
+        with self.assertRaises(Exception) as ctx:
+            self.load_config(path)
+        self.assertIn("mapping", str(ctx.exception))
+
+    def test_deprecated_px4_target_emits_warning(self):
+        """Using 'px4_target' key emits a DeprecationWarning."""
+        import warnings
+        vehicles = {0: {"type": "x500", "build_target": 0, "spawnpoint": "(0, 0, 0, 0)"}}
+        config_dict = {"px4_target": {0: "/some/path"}, "vehicles": vehicles}
+        path = os.path.join(tempfile.mkdtemp(), "deprecated.yaml")
+        with open(path, "w") as f:
+            yaml.dump(config_dict, f, default_flow_style=False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            config = self.load_config(path)
+            deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+            self.assertGreaterEqual(len(deprecation_warnings), 1)
+            self.assertIn("px4_target", str(deprecation_warnings[0].message))
+        self.assertIn("build_targets", config)
+        self.assertNotIn("px4_target", config)
 
 
 if __name__ == '__main__':

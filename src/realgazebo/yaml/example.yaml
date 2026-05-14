@@ -1,6 +1,6 @@
 # example.yaml
 
-px4_target:
+build_targets:
 # - A mapping of build targets identified by unique numeric keys.
 # - 0 must be a RealGazebo-PX4 build target.
   0 : /home/user/realgazebo/RealGazebo-PX4
