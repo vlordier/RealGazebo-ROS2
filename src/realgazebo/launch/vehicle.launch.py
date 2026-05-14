@@ -311,6 +311,22 @@ def launch_setup(context, *args, **kwargs):
         )
         timed_actions.append(ardupilot_process)
 
+        # Bridge ArduPilot MAVLink → ROS2 via MAVROS
+        mavros_bridge = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution([
+                    get_package_share_directory('ardupilot_bridge'),
+                    'launch', 'ardupilot_bridge.launch.py'
+                ])
+            ),
+            launch_arguments={
+                'instance_id': str(instance_id),
+                'fcu_url': f'udp://127.0.0.1:{14550 + instance_id * 2}@14555',
+                'tgt_system': str(instance_id + 1),
+            }.items()
+        )
+        timed_actions.append(mavros_bridge)
+
     elif firmware == "jsbsim":
         # JSBSim flight dynamics model — spawn vehicle in Gazebo visually
         # but get physics from JSBSim instead of Gazebo

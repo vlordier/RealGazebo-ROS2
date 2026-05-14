@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from std_msgs.msg import Float64MultiArray, Header
+from std_msgs.msg import Float64MultiArray, Header, String
 from rosgraph_msgs.msg import Clock
 import math
 import threading
@@ -57,6 +57,7 @@ class JSBSimBridge(Node):
         self._pose_pub = self.create_publisher(PoseStamped, f"{topic_prefix}/pose", 10)
         self._velocity_pub = self.create_publisher(TwistStamped, f"{topic_prefix}/velocity", 10)
         self._pose_cov_pub = self.create_publisher(PoseStamped, f"{topic_prefix}/pose_ground_truth", 10)
+        self._status_pub = self.create_publisher(String, f"{topic_prefix}/status", 10)
 
         # Clock subscriber (Gazebo sync)
         self.create_subscription(Clock, "/clock", self._clock_callback, 10)
@@ -217,6 +218,11 @@ class JSBSimBridge(Node):
 
         # Ground truth (same as pose for now)
         self._pose_cov_pub.publish(pose)
+
+        # Vehicle status (for dora dataflow / UE5)
+        status = String()
+        status.data = f"ARMED jsbsim/c172p pos=({state['lat']:.4f},{state['lon']:.4f},{state['alt']:.1f})"
+        self._status_pub.publish(status)
 
 
 def main(args=None):

@@ -221,6 +221,8 @@ RUN apt-get update \
     ros-$ROS_DISTRO-ros-gz \
     ros-$ROS_DISTRO-ros-gz-sim \
     ros-$ROS_DISTRO-cv-bridge \
+    ros-$ROS_DISTRO-mavros \
+    ros-$ROS_DISTRO-mavros-extras \
     libopencv-dev \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
