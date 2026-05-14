@@ -2,3 +2,6 @@
 	path = src/px4_msgs
 	url = https://github.com/PX4/px4_msgs.git
 	branch = release/1.16
+[submodule "src/ACSL-flightstack"]
+	path = src/ACSL-flightstack
+	url = https://github.com/vlordier/ACSL-flightstack.git
