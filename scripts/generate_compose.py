@@ -58,6 +58,11 @@ def parse_args():
         help='Unreal Engine server port (default: 5005)'
     )
     parser.add_argument(
+        '--image',
+        default='aware4docker/realgazebo:1.2',
+        help='Docker image tag (default: aware4docker/realgazebo:1.2)'
+    )
+    parser.add_argument(
         '--world',
         default='c-track',
         choices=['c-track', 'urban', 'vils'],
@@ -104,7 +109,7 @@ def parse_spawnpoint(spawnpoint_str):
 
 
 def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_port='5005',
-                              world='c-track', headless=True):
+                              world='c-track', headless=True, image='aware4docker/realgazebo:1.2'):
     """Generate docker-compose.override.yml content from existing YAML format"""
 
     compose = {
@@ -169,7 +174,7 @@ def generate_compose_override(config, unreal_ip='host.docker.internal', unreal_p
             env_vars.append(f'FASTRTPS_DEFAULT_PROFILES_FILE=/tmp/dds_profiles/px4_participant_{vid}.xml')
 
         compose['services'][service_name] = {
-            'image': 'aware4docker/realgazebo:1.2',
+            'image': image,
             'container_name': service_name,
             'hostname': service_name,
             'privileged': True,
@@ -232,7 +237,8 @@ def main():
         unreal_ip=args.unreal_ip,
         unreal_port=args.unreal_port,
         world=args.world,
-        headless=headless
+        headless=headless,
+        image=args.image,
     )
 
     # Write output

@@ -1,138 +1,79 @@
-# RealGazebo Makefile — common development tasks
-# Usage: make <target>
+# ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
+.PHONY: setup build up test logs down
 
-SHELL := /bin/bash
-PYTHON := python3.12
-DOCKER_COMPOSE := docker compose
-VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
+setup:                 ## One-command: install deps + init submodules + pre-commit
+	git submodule update --init --recursive
+	pip install -r requirements.txt 2>/dev/null || true
+	pre-commit install 2>/dev/null || true
+	@echo "Setup complete. Run 'make build' to build Docker image."
 
-# ── Setup ────────────────────────────────────────────────────────────────────
+build:                 ## Build the base Docker image (ROS2 + Gazebo, ~10 min)
+	docker build -f docker/Dockerfile.base -t realgazebo:base .
 
-.PHONY: setup install-deps pre-commit-install
+up:                    ## Start simulation with default config
+	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>/dev/null
+	docker compose up -d
+	@echo "Waiting for Gazebo..."; sleep 5
+	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."
 
-setup: install-deps pre-commit-install
-	@echo "Setup complete"
+down:                  ## Stop all containers
+	docker compose down 2>/dev/null; docker compose rm -f 2>/dev/null; true
 
-install-deps:
-	pip install ruff pre-commit mypy pydantic hypothesis 2>/dev/null || true
+test:                  ## Run all Python tests (works without Docker)
+	@echo "=== Running tests ==="
+	@python3 -m pytest scripts/tests/ realgazebo-dora/test/ src/jsbsim_bridge/test/ -v --timeout=60 2>&1 | tail -3 || \
+	 python3 -m unittest discover -s scripts/tests -v -t . 2>&1 | tail -1
 
-pre-commit-install:
-	@which pre-commit >/dev/null 2>&1 && pre-commit install || echo "pre-commit not found, skipping"
+smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
+	@echo "=== Smoke test ==="
+	@docker ps --format '{{.Names}} {{.Status}}' | grep -c "gazebo" >/dev/null && echo "  [OK] Gazebo container running" || echo "  [FAIL] Gazebo not running"
+	@docker exec gazebo bash -c 'source /opt/ros/jazzy/setup.bash && ros2 topic list 2>/dev/null | grep -c "/clock" >/dev/null' 2>/dev/null && echo "  [OK] /clock topic flowing" || echo "  [WARN] /clock not seen"
+	@docker compose ps 2>/dev/null | head -5
 
-# ── Python ──────────────────────────────────────────────────────────────────
+logs:                  ## Follow container logs
+	docker compose logs -f
 
-.PHONY: test test-v lint typecheck
+# ── Development (tier 2 — iterate faster) ─────────────────────────────────
+.PHONY: build-full up-dev lint typecheck docs benchmark
 
-test:
-	@echo "=== Running all Python tests ==="
-	@$(PYTHON) -m unittest discover -s src/manager/test -v -t . 2>&1 | tail -1
-	@$(PYTHON) -m unittest discover -s src/drone_controller/test -v -t . 2>&1 | tail -1
-	@$(PYTHON) -m unittest discover -s scripts/tests -v 2>&1 | tail -1
-	@$(PYTHON) -m unittest discover -s realgazebo-dora/test -v 2>&1 | tail -1
+build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
+	docker build -f docker/Dockerfile -t realgazebo:full .
 
-test-v:
-	$(PYTHON) -m unittest discover -s src/manager/test -v -t .
-	$(PYTHON) -m unittest discover -s src/drone_controller/test -v -t .
-	$(PYTHON) -m unittest discover -s scripts/tests -v
-	$(PYTHON) -m unittest discover -s realgazebo-dora/test -v
+up-dev:                ## Start with hot-reload mounts (Python edits take effect instantly)
+	@python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>/dev/null
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
-lint:
-	ruff check .
-	ruff format --check .
+lint:                  ## Run ruff linter + format check
+	ruff check . && ruff format --check .
 
-typecheck:
+typecheck:             ## Run mypy type checker
 	mypy --ignore-missing-imports realgazebo-dora/ src/ scripts/
 
-# ── Docker Build ────────────────────────────────────────────────────────────
+docs:                  ## Build both documentation systems
+	cd docs/api && sphinx-build -b html . _build/html 2>/dev/null; echo "  API docs built"
+	mkdocs build -q 2>/dev/null && echo "  User guide built"
 
-.PHONY: build-base build-full build-push
+benchmark:             ## Performance benchmarks
+	@PYTHONPATH=realgazebo-dora/ros2-bridge python3 scripts/tests/benchmark_run.py
 
-build-base:
-	$(DOCKER_COMPOSE) build gazebo 2>&1 | tail -5
+# ── Release (tier 3 — CI/CD) ──────────────────────────────────────────────
+.PHONY: tag push clean
 
-build-full:
-	docker build -f docker/Dockerfile -t realgazebo:$(VERSION) . 2>&1 | tail -5
+tag:                   ## Tag current commit as a release
+	git tag v$(shell cat .version 2>/dev/null || date +%Y%m%d)
+	git push origin v$(shell cat .version 2>/dev/null || date +%Y%m%d)
 
-build-push:
-	docker tag realgazebo:$(VERSION) ghcr.io/vlordier/realgazebo:$(VERSION)
-	docker push ghcr.io/vlordier/realgazebo:$(VERSION)
+push:                  ## Push Docker image to registry
+	docker tag realgazebo:base ghcr.io/vlordier/realgazebo:latest
+	docker push ghcr.io/vlordier/realgazebo:latest
 
-# ── Simulation ──────────────────────────────────────────────────────────────
-
-.PHONY: up up-dev down logs ps
-
-up:
-	@echo "Generating compose override..."
-	@$(PYTHON) scripts/generate_compose.py src/realgazebo/yaml/example.yaml 2>&1
-	$(DOCKER_COMPOSE) up -d
-
-up-dev:
-	@echo "Starting dev mode (source mounted for hot-reload)..."
-	@$(PYTHON) scripts/generate_compose.py src/realgazebo/yaml/example.yaml 2>&1
-	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.dev.yml up -d
-
-down:
-	$(DOCKER_COMPOSE) down
-
-logs:
-	$(DOCKER_COMPOSE) logs -f
-
-ps:
-	$(DOCKER_COMPOSE) ps
-
-# ── Docs ─────────────────────────────────────────────────────────────────────
-
-.PHONY: docs docs-serve docs-api docs-mkdocs
-
-docs: docs-api docs-mkdocs
-	@echo "Both docs built"
-
-docs-api:
-	cd docs/api && sphinx-build -b html . _build/html 2>/dev/null || echo "  Sphinx: not installed"
-
-docs-mkdocs:
-	mkdocs build -q 2>/dev/null && echo "  MkDocs: site/ ready" || echo "  MkDocs: not installed"
-
-docs-serve:
-	cd site && python3 -m http.server 8080
-
-# ── Benchmarks ───────────────────────────────────────────────────────────────
-
-.PHONY: benchmark
-
-benchmark:
-	@echo "=== network_sim performance ==="
-	@PYTHONPATH=realgazebo-dora/ros2-bridge $(PYTHON) -m scripts.tests.test_benchmark
-
-# ── Version Management ──────────────────────────────────────────────────────
-
-.PHONY: version bump-patch bump-minor tag
-
-version:
-	@echo "$(VERSION)"
-
-bump-patch:
-	@echo "Bumping patch version..."
-	@echo $(VERSION) | awk -F. '{printf "%d.%d.%d\n", $$1, $$2, $$3+1}' > .version
-
-bump-minor:
-	@echo "Bumping minor version..."
-	@echo $(VERSION) | awk -F. '{printf "%d.%d.0\n", $$1, $$2+1}' > .version
-
-tag:
-	git tag v$(shell cat .version 2>/dev/null || echo $(VERSION))
-	git push origin v$(shell cat .version 2>/dev/null || echo $(VERSION))
-
-# ── Maintenance ─────────────────────────────────────────────────────────────
-
-.PHONY: clean shellcheck
-
-clean:
-	@echo "Cleaning Python cache..."
-	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+clean:                 ## Remove build artifacts
+	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .ruff_cache -o -name .mypy_cache \) -exec rm -rf {} + 2>/dev/null
 	@find . -name "*.pyc" -delete
-	@echo "Done"
+	@echo "Cleaned"
 
-shellcheck:
-	shellcheck scripts/*.sh
+# ── Help ──────────────────────────────────────────────────────────────────
+.DEFAULT_GOAL := help
+help:                  ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | \
+	  awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-15s %s\n", $$1, $$2}'

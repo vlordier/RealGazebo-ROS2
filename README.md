@@ -37,10 +37,15 @@ Multi-vehicle simulation framework integrating **Gazebo Harmonic**, **ROS2 Jazzy
 ## Quick Start
 
 ```bash
-# Prerequisites
-make build-base    # Build base Docker image (ROS2 + Gazebo + tools)
-make up            # Start simulation with example config
-make test          # Run all tests
+# One-command setup and run (recommended)
+bash scripts/quickstart.sh
+
+# Or step by step:
+make setup          # Install dev tools + pre-commit hooks
+make build          # Build base Docker image
+make up             # Start simulation
+make test           # Run all tests
+make smoke-test     # Verify system is healthy
 ```
 
 ## Vehicle Config
