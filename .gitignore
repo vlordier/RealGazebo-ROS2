@@ -47,8 +47,8 @@ coverage/
 coverage.xml
 *.log
 
-# OS
-.direnv/
+# UE5 receiver binary
+src/RealGazeboUE5/ue5_receiver
 
 # Documentation build
 site/
@@ -59,3 +59,10 @@ log/
 # Colcon build artifacts
 install/
 build/
+
+# OS
+.direnv/
+
+# UE5 receiver binary
+src/RealGazeboUE5/ue5_receiver
+src/RealGazeboUE5/project/

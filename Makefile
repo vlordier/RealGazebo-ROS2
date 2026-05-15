@@ -154,7 +154,28 @@ land:                  ## Land vehicle (VEHICLE=0). Needs flying.
 	 ros2 service call /vehicle$(_MAV)/mavros/cmd/land \
 	   mavros_msgs/srv/CommandTOL \
 	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 0.0}"' \
-	 2>/dev/null || echo "  [FAIL] Land failed"
+ 	 2>/dev/null || echo "  [FAIL] Land failed"
+
+# ── UE5 Photorealistic rendering ───────────────────────────────────────
+.PHONY: ue5-mock ue5
+
+ue5-mock:              ## Compile & run UDP receiver to verify Gazebo→UE5 data flow
+	@$(MAKE) -C src/RealGazeboUE5 ue5-mock
+
+ue5:                   ## Open instructions for full UE5 integration
+	@echo "=== RealGazebo UE5 Integration ==="
+	@echo ""
+	@echo "  1. Clone the RealGazeboUE5 project:"
+	@echo "     git clone <url> src/RealGazeboUE5/project"
+	@echo ""
+	@echo "  2. Open the project in Unreal Engine 5:"
+	@echo "     Open src/RealGazeboUE5/project/RealGazeboUE5.uproject"
+	@echo ""
+	@echo "  3. Verify the ARxUdp actor receives data:"
+	@echo "     make ue5-mock  # Tests UDP on port 5005"
+	@echo ""
+	@echo "  4. If you don't need UE5 yet, just use Gazebo GUI:"
+	@echo "     make gui"
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up')
 	@echo "=== Smoke test ==="
