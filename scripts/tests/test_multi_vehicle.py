@@ -11,10 +11,6 @@ import tempfile
 import pytest
 import yaml
 
-EXAMPLE_YAML = os.path.join(
-    os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
-)
-
 
 class TestMultiVehicleConfig:
     """Validate that example.yaml loads correctly with all 10 vehicles.

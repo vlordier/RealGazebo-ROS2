@@ -4,11 +4,12 @@ import os
 import sys
 import time
 
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), '..', '..', 'realgazebo-dora', 'ros2-bridge')
-)
+# PYTHONPATH is set by Makefile (realgazebo-dora/ros2-bridge), but also handle direct runs
+_ROS2_BRIDGE = os.path.join(os.path.dirname(__file__), '..', '..', 'realgazebo-dora', 'ros2-bridge')
+if _ROS2_BRIDGE not in sys.path:
+    sys.path.insert(0, _ROS2_BRIDGE)
 
-from ros2_bridge.datamodel import V2VQuality, VehiclePose
+from ros2_bridge.datamodel import V2VQuality, VehiclePose  # noqa: E402
 
 
 def benchmark_v2v_construct(n: int = 100000) -> float:

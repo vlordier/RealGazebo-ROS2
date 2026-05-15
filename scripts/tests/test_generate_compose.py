@@ -7,10 +7,6 @@ import warnings
 import pytest
 import yaml
 
-EXAMPLE_YAML = os.path.join(
-    os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
-)
-
 
 def _make_config(vehicles):
     for v in vehicles.values():
@@ -26,14 +22,9 @@ def _make_config(vehicles):
 class TestConfigLoading:
     """Tests for YAML config loading and validation."""
 
-    def test_example_config_format(self):
-        from generate_compose import load_config
-
-        if not os.path.exists(EXAMPLE_YAML):
-            pytest.skip('example.yaml not found')
-        config = load_config(EXAMPLE_YAML)
-        assert 'vehicles' in config
-        assert 'build_targets' in config
+    def test_example_config_format(self, example_config):
+        assert 'vehicles' in example_config
+        assert 'build_targets' in example_config
 
     def test_valid_vehicle_types(self):
         from generate_compose import load_config
@@ -198,12 +189,9 @@ class TestGenerateComposeCLI:
         args = parse_args(['config.yaml', '/tmp/my-override.yml'])
         assert args.output_file == '/tmp/my-override.yml'
 
-    def test_validate_on_example_yaml(self):
-        from generate_compose import load_config
-
-        config = load_config(EXAMPLE_YAML)
-        assert 'vehicles' in config
-        assert len(config['vehicles']) == 10
+    def test_validate_on_example_yaml(self, example_config):
+        assert 'vehicles' in example_config
+        assert len(example_config['vehicles']) == 10
 
     def test_validate_invalid_path_raises(self):
         from generate_compose import load_config
