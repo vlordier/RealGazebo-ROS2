@@ -83,29 +83,38 @@ fly-ardupilot:         ## One-shot: build-full + up + arm + takeoff
 	@echo "=== Step 4: Takeoff to 10m ==="
 	@$(MAKE) takeoff VEHICLE=0 2>/dev/null
 	@echo "  Drone should be airborne!"
-	@echo "  make land   # Land"
-	@echo "  make ps     # Check status"
-	@echo "  make down   # Stop"
+	@echo "  make land       # Land"
+	@echo "  make logs-v     # Watch vehicle logs"
+	@echo "  make ps         # Check status"
+	@echo ""
+	@echo "  To see the drone in Gazebo:"
+	@echo "    export HEADLESS=false; make down && make up"
+	@echo "  Or on macOS with XQuartz:"
+	@echo "    xhost +localhost; HEADLESS=false make fly-ardupilot"
+	@echo "  For UE5: run RealGazeboUE5 project, listens on port 5005"
 
 arm:                   ## Arm vehicle via MAVROS (VEHICLE=0). Needs ArduPilot running.
+	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
 	@docker exec vehicle_$(VEHICLE) bash -c '\
 	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(shell echo $$(($(VEHICLE)+1)))/mavros/cmd/arming \
+	 ros2 service call /vehicle$(_MAV)/mavros/cmd/arming \
 	   mavros_msgs/srv/CommandBool "{value: true}"' 2>/dev/null || \
 	 echo "  [FAIL] vehicle_$(VEHICLE) not reachable (ArduPilot running?)"
 
 takeoff:               ## Take off to 10m (VEHICLE=0). Needs armed.
+	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
 	@docker exec vehicle_$(VEHICLE) bash -c '\
 	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(shell echo $$(($(VEHICLE)+1)))/mavros/cmd/takeoff \
+	 ros2 service call /vehicle$(_MAV)/mavros/cmd/takeoff \
 	   mavros_msgs/srv/CommandTOL \
 	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 10.0}"' \
 	 2>/dev/null || echo "  [FAIL] Takeoff failed"
 
 land:                  ## Land vehicle (VEHICLE=0). Needs flying.
+	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
 	@docker exec vehicle_$(VEHICLE) bash -c '\
 	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(shell echo $$(($(VEHICLE)+1)))/mavros/cmd/land \
+	 ros2 service call /vehicle$(_MAV)/mavros/cmd/land \
 	   mavros_msgs/srv/CommandTOL \
 	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 0.0}"' \
 	 2>/dev/null || echo "  [FAIL] Land failed"
