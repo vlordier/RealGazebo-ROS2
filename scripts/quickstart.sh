@@ -43,7 +43,7 @@ info "Checking prerequisites..."
 FAIL=0
 command -v docker >/dev/null 2>&1 || { warn "docker not found"; FAIL=1; }
 command -v git >/dev/null 2>&1 || { error "git not found"; FAIL=1; }
-python3 -c "import yaml" 2>/dev/null || { warn "pyyaml not installed, installing..."; sudo apt-get install -y python3-yaml 2>/dev/null || pip3 install pyyaml --break-system-packages -q 2>/dev/null || true; }
+python3 -c "import yaml" 2>/dev/null || { warn "pyyaml not installed, installing..."; uv pip install pyyaml -q 2>/dev/null || pip3 install pyyaml --break-system-packages -q 2>/dev/null || sudo apt-get install -y python3-yaml 2>/dev/null || true; }
 
 if [ "$FAIL" = "1" ]; then
     error "Please install missing prerequisites and retry."

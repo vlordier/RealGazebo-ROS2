@@ -10,6 +10,7 @@ build/
 .mypy_cache/
 *.manifest
 *.spec
+.venv/
 
 # Docker
 docker-compose.override.yml
