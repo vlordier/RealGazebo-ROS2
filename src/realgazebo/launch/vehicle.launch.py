@@ -319,6 +319,7 @@ def launch_setup(context, *args, **kwargs):
 
         ap_home = f'{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}'
         ap_binary = '/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter'
+        ap_gcs_ip = os.environ.get('MAVLINK_GCS_IP', '127.0.0.1')
 
         ardupilot_process = ExecuteProcess(
             cmd=[
@@ -332,6 +333,8 @@ def launch_setup(context, *args, **kwargs):
                 '1',
                 '--instance',
                 str(instance_id),
+                '--gcs-ip',
+                ap_gcs_ip,
                 '--uartC',
                 'tcp:0',
             ],

@@ -108,9 +108,12 @@ fly-ardupilot:         ## One-shot: build-full + up + arm + takeoff
 	@docker compose down 2>/dev/null || true
 	@docker compose up -d 2>&1 | tail -1
 	@echo "  Waiting for Gazebo + vehicle..."
-	@for i in $$(seq 1 30); do \
+	@for i in $$(seq 1 20); do \
+	  if docker exec gazebo bash -c 'source /opt/ros/jazzy/setup.bash && timeout 3 ros2 topic list 2>/dev/null | grep -q /clock' 2>/dev/null; then \
+	    echo "  Gazebo ready after $$((i * 3))s"; break; fi; sleep 3; done
+	@for i in $$(seq 1 15); do \
 	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
-	    echo "  Ready after $$((i * 3))s"; break; fi; sleep 3; done
+	    echo "  Vehicle ready after $$((i * 3))s"; break; fi; sleep 3; done
 	@echo "=== Step 3: Arm ==="
 	@sleep 5; $(MAKE) arm VEHICLE=0 2>/dev/null
 	@sleep 3
