@@ -1,0 +1,2 @@
+# Zenoh dependencies for RealGazebo dataflow
+zenoh>=1.0.0

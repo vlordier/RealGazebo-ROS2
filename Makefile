@@ -116,12 +116,14 @@ fly-ardupilot:         ## One-shot: build + up + arm + takeoff
 	@for i in $$(seq 1 15); do \
 	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
 	    echo "  Vehicle ready after $$((i * 3))s"; break; fi; sleep 3; done
-	@echo "  Waiting for MAVROS connection (up to 45s)..."
-	@for i in $$(seq 1 15); do \
-	  if docker exec vehicle_0 bash -c 'source /opt/ros/jazzy/setup.bash && timeout 2 ros2 topic echo /vehicle1/mavros/state --once 2>/dev/null' 2>/dev/null; then \
-	    echo "  MAVROS connected after $$((i * 3))s"; break; fi; sleep 3; done
-	@sleep 5  # Extra time for SERVO params to finish setting
-	@echo "=== Step 3: Arm ==="
+	@echo "  Waiting for MAVLink heartbeat (up to 30s)..."
+	@for i in $$(seq 1 10); do \
+	  if docker exec vehicle_0 bash -c 'uv run python3 -c "from pymavlink import mavutil; c=mavutil.mavlink_connection(\"udp:127.0.0.1:14550\", timeout=2); c.wait_heartbeat(timeout=2); print(\"OK\")"' 2>/dev/null | grep -q OK; then \
+	    echo "  MAVLink connected after $$((i * 3))s"; break; fi; sleep 3; done
+	@echo "=== Step 3: Set ArduPilot params ==="
+	@docker exec vehicle_0 bash -c 'uv run python3 scripts/mavlink_control.py set-params --instance 0' 2>/dev/null || true
+	@sleep 2
+	@echo "=== Step 4: Arm ==="
 	@$(MAKE) arm VEHICLE=0 2>/dev/null
 	@sleep 3
 	@echo "=== Step 4: Takeoff to 10m ==="
@@ -137,31 +139,30 @@ fly-ardupilot:         ## One-shot: build + up + arm + takeoff
 	@echo "    xhost +localhost; HEADLESS=false make fly-ardupilot"
 	@echo "  For UE5: run RealGazeboUE5 project, listens on port 5005"
 
-arm:                   ## Arm vehicle via MAVROS (VEHICLE=0). Needs ArduPilot running.
-	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
-	@docker exec vehicle_$(VEHICLE) bash -c '\
-	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(_MAV)/mavros/cmd/arming \
-	   mavros_msgs/srv/CommandBool "{value: true}"' 2>/dev/null || \
-	 echo "  [FAIL] vehicle_$(VEHICLE) not reachable (ArduPilot running?)"
+# ── Zenoh dataflow (replaces ROS2/dora-rs) ────────────────────────────
+.PHONY: zenoh
 
-takeoff:               ## Take off to 10m (VEHICLE=0). Needs armed.
-	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
-	@docker exec vehicle_$(VEHICLE) bash -c '\
-	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(_MAV)/mavros/cmd/takeoff \
-	   mavros_msgs/srv/CommandTOL \
-	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 10.0}"' \
-	 2>/dev/null || echo "  [FAIL] Takeoff failed"
+zenoh-install:         ## Install Zenoh Python dependencies
+	uv pip install -r requirements-zenoh.txt -q 2>/dev/null || true
 
-land:                  ## Land vehicle (VEHICLE=0). Needs flying.
-	$(eval _MAV = $(shell expr $(VEHICLE) + 1))
+zenoh: zenoh-install   ## Run Zenoh dataflow node (publishes vehicle state)
+	@echo "=== Zenoh Dataflow ==="
+	@uv run python3 scripts/zenoh_dataflow.py --instance 0
+
+arm:                   ## Arm vehicle via direct MAVLink (VEHICLE=0). No ROS2 needed.
 	@docker exec vehicle_$(VEHICLE) bash -c '\
-	 source /opt/ros/jazzy/setup.bash && source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
-	 ros2 service call /vehicle$(_MAV)/mavros/cmd/land \
-	   mavros_msgs/srv/CommandTOL \
-	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 0.0}"' \
- 	 2>/dev/null || echo "  [FAIL] Land failed"
+	 uv run python3 scripts/mavlink_control.py arm --instance $(VEHICLE) 2>&1' || \
+	 echo "  [FAIL] Could not connect to vehicle_$(VEHICLE)"
+
+takeoff:               ## Take off to 10m via direct MAVLink (VEHICLE=0).
+	@docker exec vehicle_$(VEHICLE) bash -c '\
+	 uv run python3 scripts/mavlink_control.py takeoff --instance $(VEHICLE) --altitude 10 2>&1' || \
+	 echo "  [FAIL] Takeoff failed"
+
+land:                  ## Land vehicle via direct MAVLink (VEHICLE=0).
+	@docker exec vehicle_$(VEHICLE) bash -c '\
+	 uv run python3 scripts/mavlink_control.py land --instance $(VEHICLE) 2>&1' || \
+	 echo "  [FAIL] Land failed"
 
 # ── UE5 Photorealistic rendering ───────────────────────────────────────
 .PHONY: ue5-mock ue5-download ue5-run ue5

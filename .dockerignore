@@ -16,8 +16,9 @@ __pycache__/
 .editorconfig
 .pre-commit-config.yaml
 AGENTS.md
-docker/
-docs/
 log/
 site/
 scripts/legacy/
+
+# Keep docker/ - needed by Dockerfile for entrypoint and configs
+# Keep docs/ - referenced by some build steps
