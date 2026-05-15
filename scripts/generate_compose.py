@@ -279,7 +279,10 @@ def main() -> None:
     print(f'  - {vehicle_count} vehicle(s) configured:')
     for vid, v in sorted(vehicles.items()):
         if _is_vehicle(v.get('type')):
-            print(f'    - vehicle_{vid}: {v["type"]} at {v.get("spawnpoint", "(0,0,0,0)")}')
+            mavlink_port = 18570 + int(vid)
+            print(
+                f'    - vehicle_{vid}: {v["type"]} MAVLink→:{mavlink_port} at {v.get("spawnpoint", "(0,0,0,0)")}'
+            )
     print('\nTo start the simulation:')
     print(f'  cd {os.path.dirname(output_path)}')
     print('  docker compose up -d')

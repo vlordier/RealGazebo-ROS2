@@ -52,11 +52,45 @@ coverage:              ## Run tests with coverage report
 
 validate:              ## Quick pipeline check: YAML → compose (no Docker)
 	@echo "=== Validating example.yaml ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/example.yaml --validate
-	@echo "=== Validating one_drone.yaml ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml --validate
-	@echo "=== Validating ardupilot_demo.yaml ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --validate
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/example.yaml --validate 2>&1 | grep -v DeprecationWarning
+	@echo "=== Validating generated compose ==="
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/example.yaml /tmp/realgazebo-validate.yml 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) -c "import yaml; c=yaml.safe_load(open('/tmp/realgazebo-validate.yml')); print(f'  {len(c[\"services\"])} services generated, all valid')"
+	@rm -f /tmp/realgazebo-validate.yml
+
+# ── Quick-start variants ──────────────────────────────────────────────
+.PHONY: up-px4 up-ardupilot gui gcs
+
+up-px4:                ## Start PX4 simulation with one drone (base image)
+	@echo "=== Generating compose ==="
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml --image realgazebo:base 2>&1 | grep -v DeprecationWarning
+	docker compose up -d
+	@echo "Waiting for Gazebo..."; sleep 5
+	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."
+
+up-ardupilot:          ## Start ArduPilot simulation (needs make build-full first)
+	@echo "=== Generating compose ==="
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
+	docker compose up -d
+	@echo "Waiting for Gazebo + vehicle (up to 90s)..."
+	@for i in $$(seq 1 30); do \
+	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
+	    echo "  Ready after $$((i * 3))s"; break; fi; sleep 3; done
+	@$(MAKE) smoke-test 2>/dev/null || true
+
+gui:                   ## Recreate Gazebo with GUI enabled (HEADLESS=false)
+	@echo "=== Restarting Gazebo with GUI ==="
+	HEADLESS=false docker compose up -d --no-deps --force-recreate gazebo
+	@echo "  Gazebo GUI should appear. On macOS, run: xhost +localhost"
+
+gcs:                   ## Show MAVLink GCS connection info for all vehicles
+	@echo "=== MAVLink GCS ports ==="
+	@docker ps --format '{{.Names}}' 2>/dev/null | grep vehicle_ | while read v; do \
+	  id=$${v#vehicle_}; \
+	  port=$$((18570 + id)); \
+	  echo "  $$v: MAVLink on port $$port (UDP)"; \
+	  echo "       Connect via: QGC → Add UDP link → Port $$port"; \
+	done || echo "  No vehicles running."
 
 # ── ArduPilot flight targets ────────────────────────────────────────────
 
@@ -176,5 +210,5 @@ clean:                 ## Remove build artifacts + dangling Docker images
 # ── Help ─────────────────────────────────────────────────────────────────────
 .DEFAULT_GOAL := help
 help:                  ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | \
+	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | sort | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-15s %s\n", $$1, $$2}'
