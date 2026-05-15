@@ -157,25 +157,33 @@ land:                  ## Land vehicle (VEHICLE=0). Needs flying.
  	 2>/dev/null || echo "  [FAIL] Land failed"
 
 # ── UE5 Photorealistic rendering ───────────────────────────────────────
-.PHONY: ue5-mock ue5
+.PHONY: ue5-mock ue5-download ue5-run ue5
 
 ue5-mock:              ## Compile & run UDP receiver to verify Gazebo→UE5 data flow
 	@$(MAKE) -C src/RealGazeboUE5 ue5-mock
 
-ue5:                   ## Open instructions for full UE5 integration
+ue5-download:          ## Download official UE5 binary from SUV Lab (~2GB)
+	@$(MAKE) -C src/RealGazeboUE5 download
+
+ue5-run:               ## Run the official UE5 binary (needs ue5-download first)
+	@$(MAKE) -C src/RealGazeboUE5 run
+
+ue5:                   ## Show UE5 integration overview
 	@echo "=== RealGazebo UE5 Integration ==="
 	@echo ""
-	@echo "  1. Clone the RealGazeboUE5 project:"
-	@echo "     git clone <url> src/RealGazeboUE5/project"
+	@echo "  Two options for photorealistic rendering:"
 	@echo ""
-	@echo "  2. Open the project in Unreal Engine 5:"
-	@echo "     Open src/RealGazeboUE5/project/RealGazeboUE5.uproject"
+	@echo "  Option A — Official binary (recommended):"
+	@echo "    make ue5-download   # ~2GB, pre-built by SUV Lab"
+	@echo "    make ue5-run        # Launches UE5 C-Track world"
 	@echo ""
-	@echo "  3. Verify the ARxUdp actor receives data:"
-	@echo "     make ue5-mock  # Tests UDP on port 5005"
+	@echo "  Option B — Verify data flow (no UE5 needed):"
+	@echo "    make ue5-mock       # Listen to UDP on port 5005"
+	@echo "    make fly-ardupilot  # Start simulation in another terminal"
+	@echo "    # ue5-mock will print decoded vehicle poses"
 	@echo ""
-	@echo "  4. If you don't need UE5 yet, just use Gazebo GUI:"
-	@echo "     make gui"
+	@echo "  The official binary receives UDP on port 5005"
+	@echo "  from libRealGazebo.so (inside Docker container)."
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up')
 	@echo "=== Smoke test ==="
