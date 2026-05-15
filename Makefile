@@ -27,7 +27,7 @@ down:                  ## Stop all containers
 
 test:                  ## Run all Python tests (works without Docker)
 	@echo "=== Running tests ==="
-	@$(_PYTHON) -m pytest scripts/tests/ -v -m "not integration" 2>&1 | tail -3
+	@$(_PYTHON) -m pytest scripts/tests/ -v -m "not integration" --tb=line 2>&1 | tail -1
 
 test-one:              ## Run a single test: make test-one TEST=tests/test_name.py::TestClass::test_method
 	@$(_PYTHON) -m pytest -v -m "not integration" $(TEST)
@@ -36,7 +36,12 @@ test-docker:           ## Run Python tests inside a Docker container (isolated e
 	@echo "=== Building test image ==="
 	@docker build -f docker/Dockerfile.test -t realgazebo:test . 2>&1 | tail -3
 	@echo "=== Running tests in container ==="
-	@docker run --rm realgazebo:test 2>&1 | tail -5
+	@docker run --rm realgazebo:test 2>&1 | tail -1
+
+coverage:              ## Run tests with coverage report
+	@echo "=== Coverage ==="
+	@$(_PYTHON) -m pytest scripts/tests/ -m "not integration" --cov=scripts --cov-report=term --cov-report=html 2>&1 | tail -5
+	@echo "  HTML report: htmlcov/index.html"
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
 	@echo "=== Smoke test ==="
@@ -48,7 +53,7 @@ logs:                  ## Follow container logs
 	docker compose logs -f
 
 # ── Development (tier 2 — iterate faster) ─────────────────────────────────
-.PHONY: build-full up-dev lint typecheck docs benchmark
+.PHONY: build-full up-dev format lint typecheck docs benchmark coverage
 
 build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
 	@echo "  NOTE: CI builds Dockerfile.base only. Use this target locally to verify PX4/ArduPilot integration."
@@ -61,6 +66,10 @@ up-dev:                ## Start with hot-reload mounts (Python edits take effect
 
 lint:                  ## Run ruff linter + format check
 	@uv run ruff check . --ignore D,N,UP && uv run ruff format --check .
+
+format:                ## Auto-format all Python files with ruff
+	@uv run ruff format .
+	@echo "Formatted."
 
 typecheck:             ## Run mypy + pyright type checkers
 	@echo "=== mypy ==="
