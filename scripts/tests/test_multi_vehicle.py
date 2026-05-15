@@ -31,9 +31,10 @@ class TestMultiVehicleConfig:
     def test_boat_has_ardupilot_firmware(self, example_config):
         assert example_config['vehicles'][8].get('firmware') == 'ardupilot'
 
-    def test_default_firmware_is_px4(self, example_config):
+    def test_default_firmware_is_ardupilot(self, example_config):
+        """Vehicles without explicit firmware now default to ardupilot."""
         for vid in [0, 1, 2, 3, 4, 6, 7, 9]:
-            assert example_config['vehicles'][vid].get('firmware', 'px4') == 'px4'
+            assert example_config['vehicles'][vid].get('firmware', 'ardupilot') == 'ardupilot'
 
     def test_spawnpoints_parse(self, example_config):
         from generate_compose import parse_spawnpoint

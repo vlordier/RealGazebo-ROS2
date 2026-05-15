@@ -14,16 +14,24 @@ setup:                 ## Install deps + init submodules + pre-commit
 	pre-commit install 2>/dev/null || true
 	@echo "Setup complete."
 
-build:                 ## Build base Docker image (ROS2 + Gazebo, ~10 min)
-	@TAG=realgazebo:base-$$(date +%Y%m%d); \
-	 docker build -f docker/Dockerfile.base -t realgazebo:base -t $$TAG . && \
-	 echo "  Tagged realgazebo:base and $$TAG"
+build:                 ## Build the full Docker image (~2 hours, includes ArduPilot). Run this first!
+	@echo "  Building full image with ArduPilot SITL + gz-ardupilot plugin."
+	@echo "  This takes ~2 hours on first build, then cached."
+	docker build -f docker/Dockerfile -t realgazebo:full \
+	  --cache-from realgazebo:full \
+	  --build-arg BUILDKIT_INLINE_CACHE=1 .
 
-up:                    ## Start simulation with default config
+up:                    ## Start ArduPilot simulation with one drone (needs 'make build' first)
 	@echo "=== Generating compose ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
 	docker compose up -d
-	@echo "Waiting for Gazebo..."; sleep 5
+	@echo "Waiting for Gazebo + vehicle..."
+	@for i in $$(seq 1 20); do \
+	  if docker exec gazebo bash -c 'source /opt/ros/jazzy/setup.bash && timeout 3 ros2 topic list 2>/dev/null | grep -q /clock' 2>/dev/null; then \
+	    echo "  Gazebo ready after $$((i * 3))s"; break; fi; sleep 3; done
+	@for i in $$(seq 1 15); do \
+	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
+	    echo "  Vehicle ready after $$((i * 3))s"; break; fi; sleep 3; done
 	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."
 
 down:                  ## Stop all containers
@@ -68,15 +76,8 @@ up-px4:                ## Start PX4 simulation with one drone (base image)
 	@echo "Waiting for Gazebo..."; sleep 5
 	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."
 
-up-ardupilot:          ## Start ArduPilot simulation (needs make build-full first)
-	@echo "=== Generating compose ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
-	docker compose up -d
-	@echo "Waiting for Gazebo + vehicle (up to 90s)..."
-	@for i in $$(seq 1 30); do \
-	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
-	    echo "  Ready after $$((i * 3))s"; break; fi; sleep 3; done
-	@$(MAKE) smoke-test 2>/dev/null || true
+up-ardupilot:          ## Start ArduPilot simulation (alias for 'make up')
+	@$(MAKE) up 2>&1 | grep -v DeprecationWarning
 
 gui:                   ## Recreate Gazebo with GUI enabled (HEADLESS=false)
 	@echo "=== Restarting Gazebo with GUI ==="
@@ -94,15 +95,16 @@ gcs:                   ## Show MAVLink GCS connection info for all vehicles
 
 # ── ArduPilot flight targets ────────────────────────────────────────────
 
-build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
-	@echo "  NOTE: CI builds base only. Use this for local ArduPilot testing."
+build-full:            ## (Legacy) Full build with PX4 + ArduPilot. Use 'make build' for ArduPilot-only.
+	@echo "  For ArduPilot-only, use 'make build' (faster, no PX4)."
+	@echo "  This includes PX4 for multi-firmware testing."
 	docker build -f docker/Dockerfile -t realgazebo:full \
 	  --cache-from realgazebo:full \
 	  --build-arg BUILDKIT_INLINE_CACHE=1 .
 
-fly-ardupilot:         ## One-shot: build-full + up + arm + takeoff
+fly-ardupilot:         ## One-shot: build + up + arm + takeoff
 	@echo "=== Step 1: Build full image (if needed) ==="
-	@docker image inspect realgazebo:full >/dev/null 2>&1 || make build-full
+	@docker image inspect realgazebo:full >/dev/null 2>&1 || make build
 	@echo "=== Step 2: Start simulation ==="
 	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
 	@docker compose down 2>/dev/null || true

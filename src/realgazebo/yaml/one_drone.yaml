@@ -1,18 +1,11 @@
-# one_drone.yaml
+# one_drone.yaml — single drone, ArduPilot firmware (default)
 
 build_targets:
-# - A mapping of build targets identified by unique numeric keys.
-# - 0 must be a RealGazebo-PX4 build target.
   0 : /home/user/realgazebo/RealGazebo-PX4
-  # 1: /path/to/your/other/PX4-Autopilot
 
 vehicles:
-# - Each entity is identified by a unique numeric key (e.g., 0, 1, 2, 3).
-#  - 'type': Specifies the type of the entity.
-#  - 'build_target': References the build target defined above.
-#  - 'firmware': Target autopilot firmware (px4, ardupilot, or jsbsim; defaults to px4).
-#  - 'spawnpoint' : Defines the spawn location in a 3D space using coordinates and a yaw value (in radians) (x, y, z, yaw).
-  0 :
-    type : x500
-    build_target : 0
-    spawnpoint : (18.846, -19.053, -0.8, -3.14)
+  0:
+    type: x500
+    firmware: ardupilot
+    build_target: 0
+    spawnpoint: (0.0, 0.0, 0.3, 0.0)

@@ -22,7 +22,7 @@ class VehicleEntry(BaseModel):
     """Validated vehicle entry from YAML configuration."""
 
     type: str = Field(pattern=r'^(x500|x500_lidar_2d|lc_62|rover_ackermann|boat|rock)$')
-    firmware: str = Field(default='px4', pattern=r'^(px4|ardupilot|jsbsim)$')
+    firmware: str = Field(default='ardupilot', pattern=r'^(px4|ardupilot|jsbsim)$')
     build_target: int = Field(default=0, ge=0)
     spawnpoint: str = Field(default='(0,0,0,0)', pattern=r'^\(.*\)$')
 
@@ -49,7 +49,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help='Unreal Engine server port (default: 5005)',
     )
     parser.add_argument(
-        '--image', default='realgazebo:base', help='Docker image tag (default: realgazebo:base)'
+        '--image', default='realgazebo:full', help='Docker image tag (default: realgazebo:full)'
     )
     parser.add_argument(
         '--world',
@@ -250,14 +250,11 @@ def main() -> None:
     config = load_config(args.config_file)
 
     # Warn if ArduPilot/JSBSim firmware is requested but using the base image
-    has_ardupilot = any(
-        v.get('firmware') == 'ardupilot' for v in config.get('vehicles', {}).values()
-    )
+    has_px4 = any(v.get('firmware') == 'px4' for v in config.get('vehicles', {}).values())
     has_jsbsim = any(v.get('firmware') == 'jsbsim' for v in config.get('vehicles', {}).values())
-    if has_ardupilot and 'full' not in args.image:
-        print('  [WARN] ArduPilot firmware requires the full image (realgazebo:full).')
-        print('         Run: make build-full  # ~2 hours')
-        print(f'         Or use: --image realgazebo:full (currently: {args.image})')
+    if has_px4 and 'full' not in args.image:
+        print('  [WARN] PX4 firmware requires the full image (realgazebo:full).')
+        print(f'         Current: {args.image}')
     if has_jsbsim and 'jsbsim' not in args.image:
         pass  # JSBSim is pip-installable, no image constraint
 
