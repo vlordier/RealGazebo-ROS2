@@ -1,0 +1,11 @@
+# ardupilot_demo.yaml — single drone with ArduPilot firmware for quick testing
+
+build_targets:
+  0: /home/user/realgazebo/RealGazebo-PX4
+
+vehicles:
+  0:
+    type: x500
+    firmware: ardupilot
+    build_target: 0
+    spawnpoint: (0.0, 0.0, 0.3, 0.0)

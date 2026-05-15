@@ -43,6 +43,32 @@ coverage:              ## Run tests with coverage report
 	@$(_PYTHON) -m pytest scripts/tests/ -m "not integration" --cov=scripts --cov-report=term --cov-report=html 2>&1 | tail -5
 	@echo "  HTML report: htmlcov/index.html"
 
+# ── ArduPilot flight targets (tier 1b — quick testing) ──────────────────
+.PHONY: build-full fly-ardupilot arm takeoff land
+
+fly-ardupilot:         ## Full build + start + arm + takeoff (one-shot ArduPilot demo)
+	@echo "=== Step 1: Build full image (if needed) ==="
+	@docker image inspect realgazebo:full >/dev/null 2>&1 || make build-full
+	@echo "=== Step 2: Start simulation ==="
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
+	@docker compose down 2>/dev/null || true
+	@docker compose up -d 2>&1 | tail -1
+	@echo "  Waiting for Gazebo + vehicle (up to 90s)..."
+	@for i in $$(seq 1 30); do \
+	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
+	    echo "  Vehicle ready after $$((i * 3))s"; break; \
+	  fi; sleep 3; done
+	@echo "=== Step 3: Arm ==="
+	@sleep 5
+	@-$(MAKE) arm 2>/dev/null
+	@sleep 3
+	@echo "=== Step 4: Takeoff to 10m ==="
+	@-$(MAKE) takeoff 2>/dev/null
+	@echo ""
+	@echo "  Drone should be flying! Check Gazebo GUI or UE5."
+	@echo "  make land  # To land"
+	@echo "  make down  # To stop"
+
 arm:                   ## Arm vehicle 0 via MAVROS (needs ArduPilot running)
 	@echo "=== Arming vehicle_0 ==="
 	@docker exec vehicle_0 bash -c '\

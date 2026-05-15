@@ -161,10 +161,16 @@ def launch_setup(context, *args, **kwargs):
     ap_gazebo_path = '/home/user/realgazebo/ardupilot_gazebo'  # Fixed: built at this path in Docker, independent of PX4_PATH
 
     # Environment variables
-    model_path_env = SetEnvironmentVariable(
-        'GZ_SIM_RESOURCE_PATH',
-        f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds',
-    )
+    if firmware == 'ardupilot':
+        model_path_env = SetEnvironmentVariable(
+            'GZ_SIM_RESOURCE_PATH',
+            f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds:{ap_gazebo_path}/models',
+        )
+    else:
+        model_path_env = SetEnvironmentVariable(
+            'GZ_SIM_RESOURCE_PATH',
+            f'$GZ_SIM_RESOURCE_PATH:{current_package_path}/models:{gazebo_path}/models:{gazebo_path}/worlds',
+        )
 
     plugin_paths = [
         '$GZ_SIM_SYSTEM_PLUGIN_PATH',
