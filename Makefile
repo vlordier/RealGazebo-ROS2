@@ -114,8 +114,13 @@ fly-ardupilot:         ## One-shot: build-full + up + arm + takeoff
 	@for i in $$(seq 1 15); do \
 	  if docker ps --format '{{.Names}}' | grep -q vehicle_0; then \
 	    echo "  Vehicle ready after $$((i * 3))s"; break; fi; sleep 3; done
+	@echo "  Waiting for MAVROS connection (up to 45s)..."
+	@for i in $$(seq 1 15); do \
+	  if docker exec vehicle_0 bash -c 'source /opt/ros/jazzy/setup.bash && timeout 2 ros2 topic echo /vehicle1/mavros/state --once 2>/dev/null' 2>/dev/null; then \
+	    echo "  MAVROS connected after $$((i * 3))s"; break; fi; sleep 3; done
+	@sleep 5  # Extra time for SERVO params to finish setting
 	@echo "=== Step 3: Arm ==="
-	@sleep 5; $(MAKE) arm VEHICLE=0 2>/dev/null
+	@$(MAKE) arm VEHICLE=0 2>/dev/null
 	@sleep 3
 	@echo "=== Step 4: Takeoff to 10m ==="
 	@$(MAKE) takeoff VEHICLE=0 2>/dev/null
