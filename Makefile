@@ -62,8 +62,11 @@ up-dev:                ## Start with hot-reload mounts (Python edits take effect
 lint:                  ## Run ruff linter + format check
 	@uv run ruff check . --ignore D,N,UP && uv run ruff format --check .
 
-typecheck:             ## Run mypy type checker (scripts/ only; ROS2 code needs Docker)
-	@uv run mypy --ignore-missing-imports scripts/
+typecheck:             ## Run mypy + pyright type checkers
+	@echo "=== mypy ==="
+	@uv run mypy --ignore-missing-imports scripts/ 2>&1 | tail -2
+	@echo "=== pyright ==="
+	@uv run pyright scripts/generate_compose.py scripts/tests/ 2>&1 | tail -2
 
 docs:                  ## Build both documentation systems
 	cd docs/api && sphinx-build -b html . _build/html 2>/dev/null; echo "  API docs built"
