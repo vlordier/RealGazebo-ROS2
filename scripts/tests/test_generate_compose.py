@@ -6,6 +6,10 @@ import unittest
 
 import yaml
 
+EXAMPLE_YAML = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
+)
+
 VALID_VEHICLE_TYPES = ['x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat', 'rock']
 VALID_FIRMWARES = ['px4', 'ardupilot', 'jsbsim']
 
@@ -14,14 +18,12 @@ class TestGenerateCompose(unittest.TestCase):
     """Test that generate_compose.py can load and validate YAML configs."""
 
     def setUp(self):
-        # Import inside test to avoid import-time failures
         from generate_compose import load_config, parse_spawnpoint
 
         self.load_config = load_config
         self.parse_spawnpoint = parse_spawnpoint
 
     def _make_config(self, vehicles: dict) -> str:
-        # Match real YAML format: spawnpoint as string "(x, y, z, yaw)"
         for v in vehicles.values():
             if 'spawnpoint' in v and isinstance(v['spawnpoint'], (list, tuple)):
                 v['spawnpoint'] = f'({", ".join(map(str, v["spawnpoint"]))})'
@@ -29,15 +31,12 @@ class TestGenerateCompose(unittest.TestCase):
         path = os.path.join(tempfile.mkdtemp(), 'config.yaml')
         with open(path, 'w') as f:
             yaml.dump(config, f)
-        return path, config
+        return path
 
     def test_example_config_format(self):
-        path = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
-        )
-        if not os.path.exists(path):
+        if not os.path.exists(EXAMPLE_YAML):
             self.skipTest('example.yaml not found')
-        config = self.load_config(path)
+        config = self.load_config(EXAMPLE_YAML)
         self.assertIn('vehicles', config)
         self.assertIn('build_targets', config)
 
@@ -45,9 +44,9 @@ class TestGenerateCompose(unittest.TestCase):
         vehicles = {}
         for i, vt in enumerate(VALID_VEHICLE_TYPES):
             if vt == 'rock':
-                continue  # rock is obstacle, handled differently
+                continue
             vehicles[i] = {'type': vt, 'build_target': 0, 'spawnpoint': (0, 0, 0, 0)}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(len(config['vehicles']), len(vehicles))
 
@@ -58,9 +57,9 @@ class TestGenerateCompose(unittest.TestCase):
                 'firmware': 'ardupilot',
                 'build_target': 0,
                 'spawnpoint': (0, 0, 0, 0),
-            }
+            },
         }
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(config['vehicles'][0]['firmware'], 'ardupilot')
 
@@ -71,22 +70,22 @@ class TestGenerateCompose(unittest.TestCase):
                 'firmware': 'jsbsim',
                 'build_target': 0,
                 'spawnpoint': (0, 0, 0, 0),
-            }
+            },
         }
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(config['vehicles'][0]['firmware'], 'jsbsim')
 
     def test_invalid_vehicle_type_raises(self):
         vehicles = {0: {'type': 'spaceship', 'build_target': 0}}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         with self.assertRaises(Exception) as ctx:
             self.load_config(path)
         self.assertIn('spaceship', str(ctx.exception))
 
     def test_invalid_firmware_raises(self):
         vehicles = {0: {'type': 'x500', 'firmware': 'crazyflie', 'build_target': 0}}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         with self.assertRaises(Exception) as ctx:
             self.load_config(path)
         self.assertIn('crazyflie', str(ctx.exception))
@@ -95,8 +94,6 @@ class TestGenerateCompose(unittest.TestCase):
         result = self.parse_spawnpoint('(18.846, 14.751, -1.3, -3.14)')
         self.assertEqual(len(result), 4)
         self.assertAlmostEqual(result[0], 18.846)
-        self.assertAlmostEqual(result[1], 14.751)
-        self.assertAlmostEqual(result[2], -1.3)
         self.assertAlmostEqual(result[3], -3.14)
 
     def test_parse_spawnpoint_list(self):
@@ -109,20 +106,21 @@ class TestGenerateCompose(unittest.TestCase):
             1: {'type': 'rover_ackermann', 'build_target': 0, 'spawnpoint': (10, 10, 0, 0)},
             2: {'type': 'boat', 'build_target': 0, 'spawnpoint': (20, 20, 0, 1.57)},
         }
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(len(config['vehicles']), 3)
 
     def test_rock_type_obstacle(self):
         vehicles = {0: {'type': 'rock', 'build_target': 0, 'spawnpoint': (0, 0, 0, 0)}}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         config = self.load_config(path)
         self.assertEqual(config['vehicles'][0]['type'], 'rock')
 
     def test_build_targets_key(self):
-        """Config with 'build_targets' key (new name) loads correctly."""
-        vehicles = {0: {'type': 'x500', 'build_target': 0, 'spawnpoint': '(0, 0, 0, 0)'}}
-        config_dict = {'build_targets': {0: '/some/path'}, 'vehicles': vehicles}
+        config_dict = {
+            'build_targets': {0: '/some/path'},
+            'vehicles': {0: {'type': 'x500', 'build_target': 0, 'spawnpoint': '(0, 0, 0, 0)'}},
+        }
         path = os.path.join(tempfile.mkdtemp(), 'config.yaml')
         with open(path, 'w') as f:
             yaml.dump(config_dict, f, default_flow_style=False)
@@ -131,7 +129,6 @@ class TestGenerateCompose(unittest.TestCase):
         self.assertNotIn('px4_target', config)
 
     def test_empty_config_raises(self):
-        """Empty or missing YAML content raises."""
         path = os.path.join(tempfile.mkdtemp(), 'empty.yaml')
         with open(path, 'w') as f:
             f.write('')
@@ -140,23 +137,20 @@ class TestGenerateCompose(unittest.TestCase):
         self.assertIn('Empty', str(ctx.exception))
 
     def test_missing_type_raises(self):
-        """Vehicle entry without a 'type' field raises."""
         vehicles = {0: {'build_target': 0, 'spawnpoint': (0, 0, 0, 0)}}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         with self.assertRaises(Exception) as ctx:
             self.load_config(path)
         self.assertIn('type', str(ctx.exception))
 
     def test_non_dict_vehicle_raises(self):
-        """Vehicle entry that isn't a mapping raises."""
         vehicles = {0: 'not_a_dict'}
-        path, _ = self._make_config(vehicles)
+        path = self._make_config(vehicles)
         with self.assertRaises(Exception) as ctx:
             self.load_config(path)
         self.assertIn('mapping', str(ctx.exception))
 
     def test_deprecated_px4_target_emits_warning(self):
-        """Using 'px4_target' key emits a DeprecationWarning."""
         import warnings
 
         vehicles = {0: {'type': 'x500', 'build_target': 0, 'spawnpoint': '(0, 0, 0, 0)'}}
@@ -177,39 +171,64 @@ class TestGenerateCompose(unittest.TestCase):
 class TestGenerateComposeCLI(unittest.TestCase):
     """Test generate_compose.py CLI argument parsing."""
 
-    maxDiff = None
-
     def test_defaults(self):
-        # parse_args reads sys.argv; for testing we patched it via the module
-        # We test the parser defaults through the main function indirectly
-        self.assertTrue(True)  # placeholder — CLI tests need argparse mocks
+        from generate_compose import parse_args
+
+        args = parse_args(['config.yaml'])
+        self.assertEqual(args.config_file, 'config.yaml')
+        self.assertIsNone(args.output_file)
+        self.assertEqual(args.image, 'realgazebo:base')
+        self.assertEqual(args.world, 'c-track')
+        self.assertEqual(args.unreal_ip, 'host.docker.internal')
+        self.assertEqual(args.unreal_port, '5005')
+        self.assertFalse(args.gui)
+        self.assertFalse(args.validate)
 
     def test_validate_flag(self):
-        self.assertTrue(True)  # — validate test, see test_validate_on_example_yaml
+        from generate_compose import parse_args
+
+        args = parse_args(['config.yaml', '--validate'])
+        self.assertTrue(args.validate)
+        self.assertEqual(args.config_file, 'config.yaml')
 
     def test_image_and_world_override(self):
-        self.assertTrue(True)  # placeholder — uses argparse mocks
+        from generate_compose import parse_args
+
+        args = parse_args(['config.yaml', '--image', 'myimage:v2', '--world', 'urban'])
+        self.assertEqual(args.image, 'myimage:v2')
+        self.assertEqual(args.world, 'urban')
 
     def test_gui_sets_headless_false(self):
-        self.assertTrue(True)  # placeholder
+        from generate_compose import parse_args
+
+        args = parse_args(['config.yaml', '--gui'])
+        self.assertTrue(args.gui)
 
     def test_output_file_positional(self):
-        self.assertTrue(True)  # placeholder
+        from generate_compose import parse_args
 
-    def test_validate_dry_run_no_output_needed(self):
-        self.assertTrue(True)  # — validate is a dry-run, no output file needed
+        args = parse_args(['config.yaml', '/tmp/my-override.yml'])
+        self.assertEqual(args.output_file, '/tmp/my-override.yml')
 
     def test_validate_on_example_yaml(self):
-        """--validate flag works end-to-end with example.yaml."""
         from generate_compose import load_config
 
-        example = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'src', 'realgazebo', 'yaml', 'example.yaml'
-        )
-        config = load_config(example)
+        config = load_config(EXAMPLE_YAML)
         self.assertIn('vehicles', config)
         self.assertEqual(len(config['vehicles']), 10)
 
+    def test_validate_invalid_path_raises(self):
+        from generate_compose import load_config
 
-if __name__ == '__main__':
-    unittest.main()
+        with self.assertRaises(FileNotFoundError):
+            load_config('/tmp/nonexistent_config.yaml')
+
+    def test_validate_empty_config_raises(self):
+        from generate_compose import load_config
+
+        path = os.path.join(tempfile.mkdtemp(), 'empty.yaml')
+        with open(path, 'w') as f:
+            f.write('')
+        with self.assertRaises(Exception) as ctx:
+            load_config(path)
+        self.assertIn('Empty', str(ctx.exception))

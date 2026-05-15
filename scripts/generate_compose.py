@@ -27,7 +27,7 @@ class VehicleEntry(BaseModel):
     spawnpoint: str = Field(default='(0,0,0,0)', pattern=r'^\(.*\)$')
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Generate docker-compose.override.yml from vehicle configuration'
     )
@@ -44,7 +44,9 @@ def parse_args() -> argparse.Namespace:
         help='Unreal Engine server IP (default: host.docker.internal)',
     )
     parser.add_argument(
-        '--unreal-port', default='5005', help='Unreal Engine server port (default: 5005)'
+        '--unreal-port',
+        default='5005',
+        help='Unreal Engine server port (default: 5005)',
     )
     parser.add_argument(
         '--image', default='realgazebo:base', help='Docker image tag (default: realgazebo:base)'
@@ -66,7 +68,7 @@ def parse_args() -> argparse.Namespace:
         action='store_true',
         help='Validate YAML config and exit (dry-run, no file written)',
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def load_config(config_path: str) -> dict:
