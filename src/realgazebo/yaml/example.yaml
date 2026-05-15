@@ -1,4 +1,9 @@
-# example.yaml
+# example.yaml — Multi-vehicle configuration (DEMO / EXPERT USE ONLY)
+#
+# WARNING: This config spawns 10 vehicles simultaneously.
+# Each vehicle container requests 4G RAM → 40G total.
+# On a machine with <64G RAM, reduce to 2-3 vehicles or expect OOM.
+# For testing, use one_drone.yaml or ardupilot_demo.yaml instead.
 
 build_targets:
 # - A mapping of build targets identified by unique numeric keys.

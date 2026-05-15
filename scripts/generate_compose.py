@@ -248,6 +248,19 @@ def main() -> None:
         output_path = os.path.join(project_root, 'docker-compose.override.yml')
 
     config = load_config(args.config_file)
+
+    # Warn if ArduPilot/JSBSim firmware is requested but using the base image
+    has_ardupilot = any(
+        v.get('firmware') == 'ardupilot' for v in config.get('vehicles', {}).values()
+    )
+    has_jsbsim = any(v.get('firmware') == 'jsbsim' for v in config.get('vehicles', {}).values())
+    if has_ardupilot and 'full' not in args.image:
+        print('  [WARN] ArduPilot firmware requires the full image (realgazebo:full).')
+        print('         Run: make build-full  # ~2 hours')
+        print(f'         Or use: --image realgazebo:full (currently: {args.image})')
+    if has_jsbsim and 'jsbsim' not in args.image:
+        pass  # JSBSim is pip-installable, no image constraint
+
     compose = generate_compose_override(
         config,
         unreal_ip=args.unreal_ip,

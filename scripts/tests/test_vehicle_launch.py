@@ -54,3 +54,29 @@ class TestVehicleLaunchConfig:
             r"DeclareLaunchArgument\(\s*'firmware'[^)]*default_value\s*=", content
         )
         assert len(firmware_defaults) == 0, 'firmware should have no default in vehicle.launch.py'
+
+    def test_ardupilot_model_map_has_all_vehicle_types(self):
+        """_AP_MODEL_MAP must cover all vehicle types that support ArduPilot."""
+        with open(LAUNCH_FILE) as f:
+            content = f.read()
+        # Find the _AP_MODEL_MAP dict definition
+        map_match = re.search(r'_AP_MODEL_MAP\s*=\s*\{([^}]+)\}', content)
+        assert map_match is not None, '_AP_MODEL_MAP not found in vehicle.launch.py'
+        map_body = map_match.group(1)
+        mapped_types = set(re.findall(r"'(\w+)'\s*:", map_body))
+        # Every vehicle type (except rock which is obstacle) should be mapped
+        expected_types = {'x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat'}
+        for vt in expected_types:
+            assert vt in mapped_types, f'_AP_MODEL_MAP missing vehicle type: {vt}'
+
+    def test_ardupilot_servo_params_defined(self):
+        """ArduPilot SERVOx_FUNCTION and frame params should be in the launch file."""
+        with open(LAUNCH_FILE) as f:
+            content = f.read()
+        assert 'SERVO1_FUNCTION' in content, 'Missing SERVO1_FUNCTION for ArduPilot'
+        assert 'SERVO2_FUNCTION' in content, 'Missing SERVO2_FUNCTION for ArduPilot'
+        assert 'SERVO3_FUNCTION' in content, 'Missing SERVO3_FUNCTION for ArduPilot'
+        assert 'SERVO4_FUNCTION' in content, 'Missing SERVO4_FUNCTION for ArduPilot'
+        assert 'FRAME_CLASS' in content, 'Missing FRAME_CLASS for ArduPilot'
+        assert 'FRAME_TYPE' in content, 'Missing FRAME_TYPE for ArduPilot'
+        assert 'SYSID_SW_MREV' in content, 'Missing SYSID_SW_MREV to skip RC check'

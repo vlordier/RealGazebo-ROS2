@@ -110,9 +110,11 @@ logs:                  ## Follow container logs
 # ── Development (tier 2 — iterate faster) ─────────────────────────────────
 .PHONY: build-full up-dev format lint typecheck docs benchmark coverage
 
-build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
+build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours, layer-cached)
 	@echo "  NOTE: CI builds Dockerfile.base only. Use this target locally to verify PX4/ArduPilot integration."
-	docker build -f docker/Dockerfile -t realgazebo:full .
+	docker build -f docker/Dockerfile -t realgazebo:full \
+	  --cache-from realgazebo:full \
+	  --build-arg BUILDKIT_INLINE_CACHE=1 .
 
 up-dev:                ## Start with hot-reload mounts (Python edits take effect instantly)
 	@echo "=== Generating compose override ==="

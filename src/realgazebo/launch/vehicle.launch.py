@@ -358,6 +358,29 @@ def launch_setup(context, *args, **kwargs):
         )
         timed_actions.append(mavros_bridge)
 
+        # Configure ArduPilot parameters via MAVROS (after SITL + MAVROS are up)
+        # These match the x500 quad-x frame: ccw/ccw/cw/cw motor layout
+        ap_params = [
+            ('SYSID_SW_MREV', '0'),  # Skip RC receiver check for SITL
+            ('SERVO1_FUNCTION', '33'),  # Motor 1 (FR cw)
+            ('SERVO2_FUNCTION', '34'),  # Motor 2 (FL ccw)
+            ('SERVO3_FUNCTION', '35'),  # Motor 3 (RR cw)
+            ('SERVO4_FUNCTION', '36'),  # Motor 4 (RL ccw)
+            ('FRAME_CLASS', '1'),  # Quad frame
+            ('FRAME_TYPE', '1'),  # X-configuration
+        ]
+        ap_mavros_ns = f'/vehicle{instance_id + 1}'
+        for param_name, param_value in ap_params:
+            param_cmd = [
+                'ros2',
+                'service',
+                'call',
+                f'{ap_mavros_ns}/mavros/param/set',
+                'mavros_msgs/srv/ParamSet',
+                f'{{"param_id": "{param_name}", "value": {{"integer": {param_value}, "real": 0.0}}}}',
+            ]
+            timed_actions.append(ExecuteProcess(cmd=param_cmd, output='screen'))
+
     elif firmware == 'jsbsim':
         # JSBSim flight dynamics model — spawn vehicle in Gazebo visually
         # but get physics from JSBSim instead of Gazebo
