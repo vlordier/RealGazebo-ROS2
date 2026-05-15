@@ -247,9 +247,9 @@ RUN cd /home/user/realgazebo/RealGazebo-PX4 \
 # Build ArduPilot SITL and Gazebo plugin
 RUN cd /home/user/realgazebo \
     && git clone --depth 1 --branch Copter-4.6.0 https://github.com/ArduPilot/ardupilot.git \
-    && cd ardupilot && git submodule update --init --depth 1 modules/waf \
-    && python3 modules/waf/configure --board sitl \
-    && python3 modules/waf copter
+    && cd ardupilot && git submodule update --init --recursive --depth 1 \
+    && ./waf configure --board sitl \
+    && ./waf copter
 
 RUN cd /home/user/realgazebo \
     && git clone --depth 1 https://github.com/ArduPilot/ardupilot_gazebo.git \

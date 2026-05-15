@@ -20,22 +20,18 @@ ue5-mock: $(UE5_RECEIVER)    ## Listen to UDP from libRealGazebo.so (port 5005)
 	@echo "  Listening on port 5005."
 	@./$(UE5_RECEIVER) 5005
 
-download:               ## Download the official UE5 binary (~2GB zip, silent)
+download:               ## Download the official UE5 binary (~2GB zip) with progress bar
 	@echo "=== Downloading RealGazebo UE5 binary ==="
+	@echo "  From: $(UE5_URL_BASE)/$(ZIP_FILE)"
+	@echo "  To:   $$(pwd)/$(UE5_DIR)/$(ZIP_FILE)"
+	@echo ""
 	@mkdir -p $(UE5_DIR)
-	@nohup curl -sL "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE) > /tmp/ue5-download.log 2>&1 &
-	@echo "  PID: $$(jobs -p 2>/dev/null || echo 'bg')"
-	@echo "  File: $$(cd $(UE5_DIR) && pwd)/$(ZIP_FILE)"
-	@echo "  Progress: ls -lh $(UE5_DIR)/$(ZIP_FILE)"
-	@echo "  Log: tail -f /tmp/ue5-download.log"
+	@echo "  Press Ctrl+C to cancel download."
+	@echo ""
+	@curl -L "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE)
 
-check-download:         ## Check download progress
-	@echo "=== Download Progress ==="
-	@ls -lh $(UE5_DIR)/$(ZIP_FILE) 2>/dev/null || echo "  No download file found."
-	@echo ""
-	@ps aux | grep "curl.*$(ZIP_FILE)" | grep -v grep | head -1 && echo "  Download running" || echo "  Download not running (finished or failed)"
-	@echo ""
-	@tail -3 /tmp/ue5-download.log 2>/dev/null || echo "  No log file."
+check-download:         ## Show file size so far
+	@ls -lh $(UE5_DIR)/$(ZIP_FILE) 2>/dev/null || echo "File not found"
 
 extract:                ## Extract downloaded zip
 	@echo "=== Extracting ==="
