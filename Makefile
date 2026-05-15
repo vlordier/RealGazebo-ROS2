@@ -170,10 +170,16 @@ land:                  ## Land vehicle via direct MAVLink (VEHICLE=0).
 ue5-mock:              ## Compile & run UDP receiver to verify Gazebo→UE5 data flow
 	@$(MAKE) -C src/RealGazeboUE5 ue5-mock
 
-ue5-download:          ## Download official UE5 binary from SUV Lab (~2GB)
+ue5-download:          ## Download official UE5 binary (silent background, ~2GB)
 	@$(MAKE) -C src/RealGazeboUE5 download
 
-ue5-run:               ## Run the official UE5 binary (needs ue5-download first)
+ue5-check:             ## Check UE5 download progress
+	@$(MAKE) -C src/RealGazeboUE5 check-download
+
+ue5-extract:           ## Extract downloaded UE5 zip
+	@$(MAKE) -C src/RealGazeboUE5 extract
+
+ue5-run:               ## Run the official UE5 binary (needs ue5-download + extract first)
 	@$(MAKE) -C src/RealGazeboUE5 run
 
 ue5:                   ## Show UE5 integration overview

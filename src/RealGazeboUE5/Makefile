@@ -20,15 +20,22 @@ ue5-mock: $(UE5_RECEIVER)    ## Listen to UDP from libRealGazebo.so (port 5005)
 	@echo "  Listening on port 5005."
 	@./$(UE5_RECEIVER) 5005
 
-download:               ## Download the official UE5 binary (~2GB zip)
+download:               ## Download the official UE5 binary (~2GB zip, silent)
 	@echo "=== Downloading RealGazebo UE5 binary ==="
-	@echo "  URL: $(UE5_URL_BASE)/$(ZIP_FILE)"
-	@echo "  This may take a while (~2GB)..."
 	@mkdir -p $(UE5_DIR)
-	@curl -L "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE)
-	@echo "  Extracting..."
-	@cd $(UE5_DIR) && unzip -q $(ZIP_FILE)
-	@echo "  Done! Run: make ue5-run"
+	@echo "  Downloading from $(UE5_URL_BASE)/$(ZIP_FILE) (silent)..."
+	@curl -sL "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE) &
+	@echo "  PID: $$!"
+	@echo "  Running in background."
+	@echo "  Check: ls -lh $(UE5_DIR)/$(ZIP_FILE)"
+
+check-download:         ## Check download progress
+	@ls -lh $(UE5_DIR)/$(ZIP_FILE) 2>/dev/null || echo "  Download not started or finished."
+	@ps aux | grep "curl.*$(ZIP_FILE)" | grep -v grep | head -1 || echo "  Download not running."
+
+extract:                ## Extract downloaded zip
+	@echo "=== Extracting ==="
+	@cd $(UE5_DIR) && unzip -q $(ZIP_FILE) && echo "  Extracted. Run: make ue5-run"
 
 run:                    ## Run the official UE5 binary (needs download first)
 	@echo "=== Starting RealGazebo UE5 ==="
