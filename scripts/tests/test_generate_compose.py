@@ -156,7 +156,7 @@ class TestGenerateComposeCLI:
         args = parse_args(['config.yaml'])
         assert args.config_file == 'config.yaml'
         assert args.output_file is None
-        assert args.image == 'realgazebo:full'
+        assert args.image == 'realgazebo:ardupilot'
         assert args.world == 'c-track'
         assert args.unreal_ip == 'host.docker.internal'
         assert args.unreal_port == '5005'

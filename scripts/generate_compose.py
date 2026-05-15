@@ -49,7 +49,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help='Unreal Engine server port (default: 5005)',
     )
     parser.add_argument(
-        '--image', default='realgazebo:full', help='Docker image tag (default: realgazebo:full)'
+        '--image',
+        default='realgazebo:ardupilot',
+        help='Docker image tag (default: realgazebo:ardupilot)',
     )
     parser.add_argument(
         '--world',
@@ -120,7 +122,7 @@ def generate_compose_override(
     unreal_port: str = '5005',
     world: str = 'c-track',
     headless: bool = True,
-    image: str = 'realgazebo:base',
+    image: str = 'realgazebo:ardupilot',
 ) -> dict:
     """Generate docker-compose.override.yml content from YAML config.
 
@@ -253,7 +255,7 @@ def main() -> None:
     has_px4 = any(v.get('firmware') == 'px4' for v in config.get('vehicles', {}).values())
     has_jsbsim = any(v.get('firmware') == 'jsbsim' for v in config.get('vehicles', {}).values())
     if has_px4 and 'full' not in args.image:
-        print('  [WARN] PX4 firmware requires the full image (realgazebo:full).')
+        print('  [WARN] PX4 firmware requires the full image (realgazebo:ardupilot).')
         print(f'         Current: {args.image}')
     if has_jsbsim and 'jsbsim' not in args.image:
         pass  # JSBSim is pip-installable, no image constraint

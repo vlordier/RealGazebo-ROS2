@@ -14,16 +14,16 @@ setup:                 ## Install deps + init submodules + pre-commit
 	pre-commit install 2>/dev/null || true
 	@echo "Setup complete."
 
-build:                 ## Build the full Docker image (~2 hours, includes ArduPilot). Run this first!
-	@echo "  Building full image with ArduPilot SITL + gz-ardupilot plugin."
-	@echo "  This takes ~2 hours on first build, then cached."
-	docker build -f docker/Dockerfile -t realgazebo:full \
-	  --cache-from realgazebo:full \
+build:                 ## Build the Docker image with ArduPilot SITL (~30 min, no PX4)
+	@echo "  Building ArduPilot-only image (no PX4). ~30 min first build."
+	docker build -f docker/Dockerfile.ardupilot -t realgazebo:ardupilot \
+	  --cache-from realgazebo:ardupilot \
 	  --build-arg BUILDKIT_INLINE_CACHE=1 .
+	@docker tag realgazebo:ardupilot realgazebo:ardupilot 2>/dev/null || true
 
 up:                    ## Start ArduPilot simulation with one drone (needs 'make build' first)
 	@echo "=== Generating compose ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml --image realgazebo:ardupilot 2>&1 | grep -v DeprecationWarning
 	docker compose up -d
 	@echo "Waiting for Gazebo + vehicle..."
 	@for i in $$(seq 1 20); do \
@@ -98,15 +98,15 @@ gcs:                   ## Show MAVLink GCS connection info for all vehicles
 build-full:            ## (Legacy) Full build with PX4 + ArduPilot. Use 'make build' for ArduPilot-only.
 	@echo "  For ArduPilot-only, use 'make build' (faster, no PX4)."
 	@echo "  This includes PX4 for multi-firmware testing."
-	docker build -f docker/Dockerfile -t realgazebo:full \
-	  --cache-from realgazebo:full \
+	docker build -f docker/Dockerfile -t realgazebo:ardupilot \
+	  --cache-from realgazebo:ardupilot \
 	  --build-arg BUILDKIT_INLINE_CACHE=1 .
 
 fly-ardupilot:         ## One-shot: build + up + arm + takeoff
 	@echo "=== Step 1: Build full image (if needed) ==="
-	@docker image inspect realgazebo:full >/dev/null 2>&1 || make build
+	@docker image inspect realgazebo:ardupilot >/dev/null 2>&1 || make build
 	@echo "=== Step 2: Start simulation ==="
-	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:full 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/ardupilot_demo.yaml --image realgazebo:ardupilot 2>&1 | grep -v DeprecationWarning
 	@docker compose down 2>/dev/null || true
 	@docker compose up -d 2>&1 | tail -1
 	@echo "  Waiting for Gazebo + vehicle..."
