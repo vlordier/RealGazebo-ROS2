@@ -150,8 +150,12 @@ ENV ROS_DISTRO=jazzy
 # setup ros2 keys
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
 
-# setup sources.list (arch-detection works for both amd64 and arm64)
+# setup gazebo keys
+RUN curl -sSL https://packages.osrfoundation.org/gazebo.gpg -o /usr/share/keyrings/gazebo-archive-keyring.gpg
+
+# setup sources lists (arch-detection works for both amd64 and arm64)
 RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/gazebo-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo.list > /dev/null
 
 # install bootstrap tools
 RUN apt-get update \
@@ -175,6 +179,12 @@ RUN apt-get update \
         ros-$ROS_DISTRO-ros-gz-sim \
         ros-$ROS_DISTRO-cv-bridge \
         libopencv-dev \
+        gz-harmonic \
+        libgstreamer1.0-dev \
+        libgstreamer-plugins-base1.0-dev \
+        gstreamer1.0-plugins-good \
+        gstreamer1.0-plugins-bad \
+        gstreamer1.0-libav \
     && apt-get -y autoremove \
     && apt-get clean autoclean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -258,7 +268,7 @@ RUN cd /home/user/realgazebo \
 RUN cd /home/user/realgazebo \
     && git clone --depth 1 https://github.com/ArduPilot/ardupilot_gazebo.git \
     && cd ardupilot_gazebo && mkdir -p build && cd build \
-    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=/opt/ros/jazzy \
     && make -j$(nproc) && make install
 
 USER root
