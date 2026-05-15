@@ -1,0 +1,17 @@
+# Minimal test image: runs Python unit tests inside an isolated container
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install test dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt --quiet
+
+# Copy only the test files and source code needed
+COPY scripts/ scripts/
+COPY src/ src/
+COPY realgazebo-dora/ realgazebo-dora/
+COPY pyproject.toml .
+
+# Default command: run tests
+CMD ["python3", "-m", "pytest", "scripts/tests/", "-v", "-m", "not integration"]

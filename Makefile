@@ -1,5 +1,5 @@
 # ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
-.PHONY: setup build up down test test-one smoke-test logs help
+.PHONY: setup build up down test test-one test-docker smoke-test logs help
 
 setup:                 ## One-command: install deps + init submodules + pre-commit
 	git submodule update --init --recursive --depth 1 2>/dev/null || git submodule update --init --recursive
@@ -28,6 +28,12 @@ test:                  ## Run all Python tests (works without Docker)
 
 test-one:              ## Run a single test: make test-one TEST=tests/test_name.py::TestClass::test_method
 	@uv run python3 -m pytest -v -m "not integration" $(TEST)
+
+test-docker:           ## Run Python tests inside a Docker container (isolated env)
+	@echo "=== Building test image ==="
+	@docker build -f docker/Dockerfile.test -t realgazebo:test . 2>&1 | tail -3
+	@echo "=== Running tests in container ==="
+	@docker run --rm realgazebo:test 2>&1 | tail -5
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
 	@echo "=== Smoke test ==="
