@@ -1,5 +1,5 @@
 # ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
-.PHONY: setup build up down test test-one test-docker smoke-test logs help
+.PHONY: setup build up down test test-one test-docker arm takeoff land smoke-test logs help
 
 # Python runner with scripts/ on the import path (no sys.path hacks needed)
 _PYTHON = PYTHONPATH=scripts uv run python3
@@ -42,6 +42,35 @@ coverage:              ## Run tests with coverage report
 	@echo "=== Coverage ==="
 	@$(_PYTHON) -m pytest scripts/tests/ -m "not integration" --cov=scripts --cov-report=term --cov-report=html 2>&1 | tail -5
 	@echo "  HTML report: htmlcov/index.html"
+
+arm:                   ## Arm vehicle 0 via MAVROS (needs ArduPilot running)
+	@echo "=== Arming vehicle_0 ==="
+	@docker exec vehicle_0 bash -c '\
+	 source /opt/ros/jazzy/setup.bash && \
+	 source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
+	 ros2 service call /vehicle1/mavros/cmd/arming \
+	   mavros_msgs/srv/CommandBool "{value: true}"' 2>/dev/null || \
+	 echo "  Vehicle not running or not ArduPilot."
+
+takeoff:               ## Take off vehicle 0 to 10m (needs ArduPilot armed)
+	@echo "=== Takeoff vehicle_0 to 10m ==="
+	@docker exec vehicle_0 bash -c '\
+	 source /opt/ros/jazzy/setup.bash && \
+	 source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
+	 ros2 service call /vehicle1/mavros/cmd/takeoff \
+	   mavros_msgs/srv/CommandTOL \
+	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 10.0}"' \
+	   2>/dev/null || echo "  Vehicle not running or not ArduPilot."
+
+land:                  ## Land vehicle 0 (needs ArduPilot flying)
+	@echo "=== Landing vehicle_0 ==="
+	@docker exec vehicle_0 bash -c '\
+	 source /opt/ros/jazzy/setup.bash && \
+	 source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash && \
+	 ros2 service call /vehicle1/mavros/cmd/land \
+	   mavros_msgs/srv/CommandTOL \
+	   "{min_pitch: 0.0, yaw: 0.0, latitude: 0.0, longitude: 0.0, altitude: 0.0}"' \
+ 	   2>/dev/null || echo "  Vehicle not running or not ArduPilot."
 
 smoke-test:            ## Verify Docker stack is healthy (needs 'make up' first)
 	@echo "=== Smoke test ==="

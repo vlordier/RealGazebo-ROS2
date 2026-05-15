@@ -158,7 +158,7 @@ def launch_setup(context, *args, **kwargs):
         raise ValueError(f'Spawnpoint must have 4 values (x,y,z,yaw), got: {spawnpoint_str}')
 
     gazebo_path = f'{px4_path}/Tools/simulation/gz'
-    ap_gazebo_path = f'{px4_path}/ardupilot_gazebo'  # ArduPilot Gazebo plugin path
+    ap_gazebo_path = '/home/user/realgazebo/ardupilot_gazebo'  # Fixed: built at this path in Docker, independent of PX4_PATH
 
     # Environment variables
     model_path_env = SetEnvironmentVariable(
@@ -300,6 +300,17 @@ def launch_setup(context, *args, **kwargs):
                 timed_actions.append(param_process)
 
     elif firmware == 'ardupilot':
+        # Map our vehicle type names to ArduPilot Gazebo model names
+        # (ardupilot_gazebo uses standard ArduPilot vehicle model names)
+        _AP_MODEL_MAP = {
+            'x500': 'gazebo-iris',  # Quadcopter x-frame, 4 motors
+            'x500_lidar_2d': 'gazebo-iris',
+            'lc_62': 'gazebo-typhoon_h480',  # Hexacopter + twin puller
+            'rover_ackermann': 'gazebo-rover',
+            'boat': 'gazebo-boat',
+        }
+        ap_model = _AP_MODEL_MAP.get(vehicle_type, f'gazebo-{vehicle_type}')
+
         ap_home = f'{spawnpoint[0]},{spawnpoint[1]},{spawnpoint[2]}'
         ap_binary = '/home/user/realgazebo/ardupilot/build/sitl/bin/arducopter'
 
@@ -308,7 +319,7 @@ def launch_setup(context, *args, **kwargs):
                 ap_binary,
                 f'-I{instance_id}',
                 '--model',
-                f'gazebo-{vehicle_type}',
+                ap_model,
                 '--home',
                 ap_home,
                 '--speedup',
