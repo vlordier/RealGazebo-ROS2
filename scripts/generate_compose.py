@@ -158,7 +158,7 @@ def generate_compose_override(
         )
 
     vehicle_models_str = ','.join(vehicle_models)
-    compose = {'services': {}}
+    compose: dict = {'services': {}}
 
     for m in vmeta:
         px4_path = build_targets.get(m['v_build_target'], '/home/user/realgazebo/RealGazebo-PX4')

@@ -1,6 +1,9 @@
 # ── Quickstart (tier 1 — what 90% of users need) ─────────────────────────
 .PHONY: setup build up down test test-one test-docker smoke-test logs help
 
+# Python runner with scripts/ on the import path (no sys.path hacks needed)
+_PYTHON = PYTHONPATH=scripts uv run python3
+
 setup:                 ## One-command: install deps + init submodules + pre-commit
 	git submodule update --init --recursive --depth 1 2>/dev/null || git submodule update --init --recursive
 	uv venv 2>/dev/null; uv pip install -r requirements.txt -q 2>/dev/null || true
@@ -14,7 +17,7 @@ build:                 ## Build the base Docker image (ROS2 + Gazebo, ~10 min)
 
 up:                    ## Start simulation with default config
 	@echo "=== Generating compose override ==="
-	@uv run python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
 	docker compose up -d
 	@echo "Waiting for Gazebo..."; sleep 5
 	@$(MAKE) smoke-test 2>/dev/null || echo "Run 'make smoke-test' to verify."
@@ -24,10 +27,10 @@ down:                  ## Stop all containers
 
 test:                  ## Run all Python tests (works without Docker)
 	@echo "=== Running tests ==="
-	@uv run python3 -m pytest scripts/tests/ -v -m "not integration" 2>&1 | tail -3
+	@$(_PYTHON) -m pytest scripts/tests/ -v -m "not integration" 2>&1 | tail -3
 
 test-one:              ## Run a single test: make test-one TEST=tests/test_name.py::TestClass::test_method
-	@uv run python3 -m pytest -v -m "not integration" $(TEST)
+	@$(_PYTHON) -m pytest -v -m "not integration" $(TEST)
 
 test-docker:           ## Run Python tests inside a Docker container (isolated env)
 	@echo "=== Building test image ==="
@@ -53,21 +56,21 @@ build-full:            ## Full build: includes PX4 + ArduPilot (~2 hours)
 
 up-dev:                ## Start with hot-reload mounts (Python edits take effect instantly)
 	@echo "=== Generating compose override ==="
-	@uv run python3 scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
+	@$(_PYTHON) scripts/generate_compose.py src/realgazebo/yaml/one_drone.yaml 2>&1 | grep -v DeprecationWarning
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 lint:                  ## Run ruff linter + format check
-	@ruff check . --ignore D,N,UP && ruff format --check .
+	@uv run ruff check . --ignore D,N,UP && uv run ruff format --check .
 
-typecheck:             ## Run mypy type checker
-	mypy --ignore-missing-imports realgazebo-dora/ src/ scripts/
+typecheck:             ## Run mypy type checker (scripts/ only; ROS2 code needs Docker)
+	@uv run mypy --ignore-missing-imports scripts/
 
 docs:                  ## Build both documentation systems
 	cd docs/api && sphinx-build -b html . _build/html 2>/dev/null; echo "  API docs built"
 	mkdocs build -q 2>/dev/null && echo "  User guide built"
 
 benchmark:             ## Performance benchmarks
-	@PYTHONPATH=realgazebo-dora/ros2-bridge uv run python3 scripts/tests/benchmark_run.py
+	@PYTHONPATH="scripts:realgazebo-dora/ros2-bridge" uv run python3 scripts/tests/benchmark_run.py
 
 # ── Release (tier 3 — CI/CD) ──────────────────────────────────────────────
 .PHONY: tag push clean

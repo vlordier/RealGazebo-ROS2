@@ -13,5 +13,6 @@ COPY src/ src/
 COPY realgazebo-dora/ realgazebo-dora/
 COPY pyproject.toml .
 
-# Default command: run tests
+# Default command: run tests with scripts/ on import path
+ENV PYTHONPATH=/app/scripts
 CMD ["python3", "-m", "pytest", "scripts/tests/", "-v", "-m", "not integration"]
