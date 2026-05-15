@@ -23,19 +23,23 @@ ue5-mock: $(UE5_RECEIVER)    ## Listen to UDP from libRealGazebo.so (port 5005)
 download:               ## Download the official UE5 binary (~2GB zip, silent)
 	@echo "=== Downloading RealGazebo UE5 binary ==="
 	@mkdir -p $(UE5_DIR)
-	@echo "  Downloading from $(UE5_URL_BASE)/$(ZIP_FILE) (silent)..."
-	@curl -sL "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE) &
-	@echo "  PID: $$!"
-	@echo "  Running in background."
-	@echo "  Check: ls -lh $(UE5_DIR)/$(ZIP_FILE)"
+	@nohup curl -sL "$(UE5_URL_BASE)/$(ZIP_FILE)" -o $(UE5_DIR)/$(ZIP_FILE) > /tmp/ue5-download.log 2>&1 &
+	@echo "  PID: $$(jobs -p 2>/dev/null || echo 'bg')"
+	@echo "  File: $$(cd $(UE5_DIR) && pwd)/$(ZIP_FILE)"
+	@echo "  Progress: ls -lh $(UE5_DIR)/$(ZIP_FILE)"
+	@echo "  Log: tail -f /tmp/ue5-download.log"
 
 check-download:         ## Check download progress
-	@ls -lh $(UE5_DIR)/$(ZIP_FILE) 2>/dev/null || echo "  Download not started or finished."
-	@ps aux | grep "curl.*$(ZIP_FILE)" | grep -v grep | head -1 || echo "  Download not running."
+	@echo "=== Download Progress ==="
+	@ls -lh $(UE5_DIR)/$(ZIP_FILE) 2>/dev/null || echo "  No download file found."
+	@echo ""
+	@ps aux | grep "curl.*$(ZIP_FILE)" | grep -v grep | head -1 && echo "  Download running" || echo "  Download not running (finished or failed)"
+	@echo ""
+	@tail -3 /tmp/ue5-download.log 2>/dev/null || echo "  No log file."
 
 extract:                ## Extract downloaded zip
 	@echo "=== Extracting ==="
-	@cd $(UE5_DIR) && unzip -q $(ZIP_FILE) && echo "  Extracted. Run: make ue5-run"
+	@cd $(UE5_DIR) && unzip -q $(ZIP_FILE) && echo "  Extracted. Run: make -C src/RealGazeboUE5 run"
 
 run:                    ## Run the official UE5 binary (needs download first)
 	@echo "=== Starting RealGazebo UE5 ==="
