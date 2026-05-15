@@ -256,7 +256,9 @@ RUN cd /home/user/realgazebo/RealGazebo-PX4 \
    && make px4_sitl -j$(nproc) \
    && cd /home/user/realgazebo/RealGazebo-ROS2 \
    && . /opt/ros/$ROS_DISTRO/setup.sh \
-   && colcon build --symlink-install --parallel-workers $(nproc)
+    && colcon build --symlink-install --parallel-workers $(nproc)
+
+USER root
 
 # Build ArduPilot SITL and Gazebo plugin
 RUN cd /home/user/realgazebo \
@@ -268,14 +270,13 @@ RUN cd /home/user/realgazebo \
 RUN cd /home/user/realgazebo \
     && git clone --depth 1 https://github.com/ArduPilot/ardupilot_gazebo.git \
     && cd ardupilot_gazebo && mkdir -p build && cd build \
-    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH=/opt/ros/jazzy \
+    && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     && make -j$(nproc) && make install
 
-USER root
+USER user
 # Add setup file at bashrc
 RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> /home/user/.bashrc \
-    && echo "source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash" >> /home/user/.bashrc \
-    && chown user:user /home/user/.bashrc
+    && echo "source /home/user/realgazebo/RealGazebo-ROS2/install/setup.bash" >> /home/user/.bashrc
 
 # Entrypoint
 COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
