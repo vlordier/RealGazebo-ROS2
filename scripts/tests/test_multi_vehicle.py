@@ -7,7 +7,6 @@ Integration tests (marked @pytest.mark.integration) require Docker + running sta
 import os
 import re
 import tempfile
-import unittest
 
 import pytest
 import yaml
@@ -17,234 +16,215 @@ EXAMPLE_YAML = os.path.join(
 )
 
 
-class TestMultiVehicleConfig(unittest.TestCase):
-    """Validate that example.yaml loads correctly with all 10 vehicles."""
+class TestMultiVehicleConfig:
+    """Validate that example.yaml loads correctly with all 10 vehicles.
+    Uses the `example_config` session-scoped fixture from conftest.py.
+    """
 
-    def setUp(self):
-        from generate_compose import load_config
+    def test_example_loads_all_vehicles(self, example_config):
+        assert 'vehicles' in example_config
+        assert len(example_config['vehicles']) == 10
 
-        self._config = load_config(EXAMPLE_YAML)
+    def test_example_vehicle_types(self, example_config):
+        types = {v['type'] for v in example_config['vehicles'].values()}
+        assert types == {'x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat'}
 
-    def test_example_loads_all_vehicles(self):
-        self.assertIn('vehicles', self._config)
-        self.assertEqual(len(self._config['vehicles']), 10)
+    def test_rover_has_ardupilot_firmware(self, example_config):
+        assert example_config['vehicles'][5].get('firmware') == 'ardupilot'
 
-    def test_example_vehicle_types(self):
-        types = {v['type'] for v in self._config['vehicles'].values()}
-        expected = {'x500', 'x500_lidar_2d', 'lc_62', 'rover_ackermann', 'boat'}
-        self.assertEqual(types, expected)
+    def test_boat_has_ardupilot_firmware(self, example_config):
+        assert example_config['vehicles'][8].get('firmware') == 'ardupilot'
 
-    def test_rover_has_ardupilot_firmware(self):
-        self.assertEqual(self._config['vehicles'][5].get('firmware'), 'ardupilot')
-
-    def test_boat_has_ardupilot_firmware(self):
-        self.assertEqual(self._config['vehicles'][8].get('firmware'), 'ardupilot')
-
-    def test_default_firmware_is_px4(self):
+    def test_default_firmware_is_px4(self, example_config):
         for vid in [0, 1, 2, 3, 4, 6, 7, 9]:
-            self.assertEqual(self._config['vehicles'][vid].get('firmware', 'px4'), 'px4')
+            assert example_config['vehicles'][vid].get('firmware', 'px4') == 'px4'
 
-    def test_spawnpoints_parse(self):
+    def test_spawnpoints_parse(self, example_config):
         from generate_compose import parse_spawnpoint
 
-        for vid, v in self._config['vehicles'].items():
+        for vid, v in example_config['vehicles'].items():
             sp = parse_spawnpoint(v['spawnpoint'])
-            self.assertEqual(len(sp), 4, f'vehicle_{vid} spawnpoint has {len(sp)} values')
-            for coord in sp:
-                self.assertIsInstance(coord, (int, float))
+            assert len(sp) == 4, f'vehicle_{vid} spawnpoint has {len(sp)} values'
+            assert all(isinstance(c, (int, float)) for c in sp)
 
 
-class TestMultiVehicleCompose(unittest.TestCase):
-    """Validate docker-compose generation for multi-vehicle config."""
+class TestMultiVehicleCompose:
+    """Validate docker-compose generation for multi-vehicle config.
+    Uses the `compose_override` session-scoped fixture from conftest.py.
+    """
 
-    def setUp(self):
-        from generate_compose import generate_compose_override, load_config
+    def test_all_vehicle_services_generated(self, compose_override):
+        services = [s for s in compose_override['services'] if s.startswith('vehicle_')]
+        assert len(services) == 10
 
-        self.compose = generate_compose_override(load_config(EXAMPLE_YAML))
+    def test_vehicle_models_string(self, compose_override):
+        cmd = compose_override['services']['vehicle_5']['command']
+        assert 'vehicle_models:=' in cmd
+        assert 'rover_ackermann_5' in cmd
 
-    def test_all_vehicle_services_generated(self):
-        vehicle_services = [s for s in self.compose['services'] if s.startswith('vehicle_')]
-        self.assertEqual(len(vehicle_services), 10)
-
-    def test_vehicle_models_string(self):
-        v5_cmd = self.compose['services']['vehicle_5']['command']
-        self.assertIn('vehicle_models:=', v5_cmd)
-        self.assertIn('rover_ackermann_5', v5_cmd)
-
-    def test_networks_are_disjoint(self):
+    def test_networks_are_disjoint(self, compose_override):
         all_ips = {}
-        for sname, svc in self.compose['services'].items():
-            for _net, netcfg in svc.get('networks', {}).items():
+        for sname, svc in compose_override['services'].items():
+            for netcfg in svc.get('networks', {}).values():
                 ip = netcfg['ipv4_address']
-                self.assertNotIn(ip, all_ips, f'IP {ip} reused by {sname}')
+                assert ip not in all_ips, f'IP {ip} reused by {sname}'
                 all_ips[ip] = sname
 
-    def test_gazebo_network_range(self):
-        for sname, svc in self.compose['services'].items():
+    def test_gazebo_network_range(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if 'vehicle_' not in sname:
                 continue
             vid = int(sname.split('_')[1])
-            self.assertEqual(
-                svc['networks']['gazebo-network']['ipv4_address'], f'172.20.0.{10 + vid}'
-            )
+            assert svc['networks']['gazebo-network']['ipv4_address'] == f'172.20.0.{10 + vid}'
 
-    def test_vehicle_network_range(self):
-        for sname, svc in self.compose['services'].items():
+    def test_vehicle_network_range(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if 'vehicle_' not in sname:
                 continue
             vid = int(sname.split('_')[1])
-            self.assertEqual(
-                svc['networks']['vehicle-network']['ipv4_address'], f'172.30.0.{10 + vid}'
-            )
+            assert svc['networks']['vehicle-network']['ipv4_address'] == f'172.30.0.{10 + vid}'
 
-    def test_firmware_to_command(self):
-        self.assertIn('firmware:=ardupilot', self.compose['services']['vehicle_5']['command'])
-        self.assertIn('firmware:=ardupilot', self.compose['services']['vehicle_8']['command'])
-        self.assertIn('firmware:=px4', self.compose['services']['vehicle_0']['command'])
+    def test_firmware_to_command(self, compose_override):
+        assert 'firmware:=ardupilot' in compose_override['services']['vehicle_5']['command']
+        assert 'firmware:=ardupilot' in compose_override['services']['vehicle_8']['command']
+        assert 'firmware:=px4' in compose_override['services']['vehicle_0']['command']
 
-    def test_px4_env_vars(self):
-        env = ' '.join(self.compose['services']['vehicle_0']['environment'])
-        self.assertIn('PX4_GZ_STANDALONE=1', env)
-        self.assertIn('FASTRTPS_DEFAULT_PROFILES_FILE', env)
+    def test_px4_env_vars(self, compose_override):
+        env = ' '.join(compose_override['services']['vehicle_0']['environment'])
+        assert 'PX4_GZ_STANDALONE=1' in env
+        assert 'FASTRTPS_DEFAULT_PROFILES_FILE' in env
 
-    def test_ardupilot_no_px4_env_vars(self):
-        env = ' '.join(self.compose['services']['vehicle_5']['environment'])
-        self.assertNotIn('PX4_GZ_STANDALONE', env)
-        self.assertNotIn('FASTRTPS_DEFAULT_PROFILES_FILE', env)
+    def test_ardupilot_no_px4_env_vars(self, compose_override):
+        env = ' '.join(compose_override['services']['vehicle_5']['environment'])
+        assert 'PX4_GZ_STANDALONE' not in env
+        assert 'FASTRTPS_DEFAULT_PROFILES_FILE' not in env
 
-    def test_common_env_vars_all_vehicles(self):
-        for sname, svc in self.compose['services'].items():
+    def test_common_env_vars_all_vehicles(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if not sname.startswith('vehicle_'):
                 continue
             env = ' '.join(svc['environment'])
-            self.assertIn('DISPLAY=', env, f'{sname} missing DISPLAY')
-            self.assertIn('GZ_IP=', env, f'{sname} missing GZ_IP')
-            self.assertIn('GZ_PARTITION=realgazebo', env, f'{sname} missing GZ_PARTITION')
-            self.assertIn('MAVLINK_GCS_IP=', env, f'{sname} missing MAVLINK_GCS_IP')
+            assert 'DISPLAY=' in env, f'{sname} missing DISPLAY'
+            assert 'GZ_IP=' in env, f'{sname} missing GZ_IP'
+            assert 'GZ_PARTITION=realgazebo' in env, f'{sname} missing GZ_PARTITION'
+            assert 'MAVLINK_GCS_IP=' in env, f'{sname} missing MAVLINK_GCS_IP'
 
-    def test_rock_skip_in_compose(self):
-        vehicle_types = {}
-        for sname, svc in self.compose['services'].items():
+    def test_rock_skip_in_compose(self, compose_override):
+        types = {}
+        for sname, svc in compose_override['services'].items():
             if sname.startswith('vehicle_'):
                 m = re.search(r'vehicle_type:=(\w+)', svc['command'])
                 if m:
-                    vehicle_types[sname] = m.group(1)
-        self.assertNotIn(
-            'rock', vehicle_types.values(), 'Rock should not appear as a vehicle service'
-        )
+                    types[sname] = m.group(1)
+        assert 'rock' not in types.values(), 'Rock should not appear as a vehicle service'
 
-    def test_all_vehicle_ports_unique(self):
+    def test_all_vehicle_ports_unique(self, compose_override):
         ports = set()
-        for sname, svc in self.compose['services'].items():
+        for sname, svc in compose_override['services'].items():
             for port in svc.get('ports', []):
-                udp_port = port.split(':')[0]
-                self.assertNotIn(udp_port, ports, f'Port {udp_port} reused on {sname}')
-                ports.add(udp_port)
+                p = port.split(':')[0]
+                assert p not in ports, f'Port {p} reused on {sname}'
+                ports.add(p)
 
-    def test_vehicle_depends_on_gazebo(self):
-        for sname, svc in self.compose['services'].items():
+    def test_vehicle_depends_on_gazebo(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if sname.startswith('vehicle_'):
-                self.assertEqual(svc['depends_on']['gazebo']['condition'], 'service_healthy')
+                assert svc['depends_on']['gazebo']['condition'] == 'service_healthy'
 
-    def test_spawnpoint_in_command(self):
-        self.assertIn('spawnpoint:=', self.compose['services']['vehicle_0']['command'])
+    def test_spawnpoint_in_command(self, compose_override):
+        assert 'spawnpoint:=' in compose_override['services']['vehicle_0']['command']
 
-    def test_restart_unless_stopped(self):
-        for sname, svc in self.compose['services'].items():
+    def test_restart_unless_stopped(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if sname.startswith('vehicle_'):
-                self.assertEqual(
-                    svc.get('restart'), 'unless-stopped', f'{sname} missing restart policy'
-                )
+                assert svc.get('restart') == 'unless-stopped', f'{sname} missing restart policy'
 
-    def test_logging_prefix_in_command(self):
-        for sname, svc in self.compose['services'].items():
+    def test_logging_prefix_in_command(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if sname.startswith('vehicle_'):
-                self.assertIn('[vehicle_', svc['command'], f'{sname} missing logging prefix')
+                assert '[vehicle_' in svc['command'], f'{sname} missing logging prefix'
 
-    def test_px4_path_resolved_from_build_targets(self):
-        cmd = self.compose['services']['vehicle_0']['command']
-        m = re.search(r'px4_path:=(\S+)', cmd)
-        self.assertIsNotNone(m, 'px4_path not found')
-        self.assertEqual(m.group(1), '/home/user/realgazebo/RealGazebo-PX4')
+    def test_px4_path_resolved_from_build_targets(self, compose_override):
+        m = re.search(r'px4_path:=(\S+)', compose_override['services']['vehicle_0']['command'])
+        assert m is not None, 'px4_path not found'
+        assert m.group(1) == '/home/user/realgazebo/RealGazebo-PX4'
 
-    def test_healthcheck_configured(self):
-        for sname, svc in self.compose['services'].items():
+    def test_healthcheck_configured(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if sname.startswith('vehicle_'):
                 hc = svc.get('healthcheck', {})
-                self.assertIn('test', hc, f'{sname} missing healthcheck')
-                self.assertEqual(hc.get('retries'), 10)
-                self.assertEqual(hc.get('interval'), '15s')
-                self.assertEqual(hc.get('start_period'), '120s')
+                assert 'test' in hc, f'{sname} missing healthcheck'
+                assert hc.get('retries') == 10
+                assert hc.get('interval') == '15s'
+                assert hc.get('start_period') == '120s'
 
-    def test_v2v_vehicle_models_all_vehicles(self):
-        models_by_vehicle = {}
-        for sname, svc in self.compose['services'].items():
+    def test_v2v_vehicle_models_all_vehicles(self, compose_override):
+        models = {}
+        for sname, svc in compose_override['services'].items():
             if not sname.startswith('vehicle_'):
                 continue
             m = re.search(r'vehicle_models:=([\w,]+)', svc['command'])
-            self.assertIsNotNone(m, f'{sname} missing vehicle_models')
-            models_by_vehicle[sname] = set(m.group(1).split(','))
-        ref_models = next(iter(models_by_vehicle.values()))
-        for sname, models in models_by_vehicle.items():
-            self.assertEqual(models, ref_models, f'{sname} vehicle_models differs')
-        self.assertEqual(len(ref_models), 10)
+            assert m is not None, f'{sname} missing vehicle_models'
+            models[sname] = set(m.group(1).split(','))
+        ref = next(iter(models.values()))
+        for sname, m in models.items():
+            assert m == ref, f'{sname} vehicle_models differs'
+        assert len(ref) == 10
 
-    def test_v2v_network_isolation_env(self):
-        for sname, svc in self.compose['services'].items():
+    def test_v2v_network_isolation_env(self, compose_override):
+        for sname, svc in compose_override['services'].items():
             if not sname.startswith('vehicle_'):
                 continue
             vid = int(sname.split('_')[1])
             env = ' '.join(svc['environment'])
-            self.assertIn(f'GZ_IP=172.20.0.{10 + vid}', env, f'{sname} missing GZ_IP')
+            assert f'GZ_IP=172.20.0.{10 + vid}' in env, f'{sname} missing GZ_IP'
 
-    def test_v2v_mavlink_port_unique(self):
+    def test_v2v_mavlink_port_unique(self, compose_override):
         ports = set()
-        for sname, svc in self.compose['services'].items():
+        for sname, svc in compose_override['services'].items():
             if not sname.startswith('vehicle_'):
                 continue
             for port in svc.get('ports', []):
-                udp_port = int(port.split(':')[0])
-                self.assertNotIn(udp_port, ports, f'Port {udp_port} reused on {sname}')
-                ports.add(udp_port)
-                self.assertGreaterEqual(udp_port, 18570)
-                self.assertLessEqual(udp_port, 18579)
+                p = int(port.split(':')[0])
+                assert p not in ports, f'Port {p} reused on {sname}'
+                ports.add(p)
+                assert 18570 <= p <= 18579
 
-    def test_pipeline_end_to_end(self):
+    def test_pipeline_end_to_end(self, example_config):
         """YAML -> compose -> validate output is valid YAML with expected structure."""
-        from generate_compose import generate_compose_override, load_config
+        from generate_compose import generate_compose_override
 
         output_path = os.path.join(tempfile.mkdtemp(), 'override.yml')
         with open(output_path, 'w') as f:
             yaml.dump(
-                generate_compose_override(load_config(EXAMPLE_YAML)),
+                generate_compose_override(example_config),
                 f,
                 default_flow_style=False,
                 sort_keys=False,
             )
         with open(output_path) as f:
             parsed = yaml.safe_load(f)
-        self.assertIn('services', parsed)
+        assert 'services' in parsed
         s0 = parsed['services']['vehicle_0']
-        self.assertIn('gazebo-network', s0['networks'])
-        self.assertIn('vehicle-network', s0['networks'])
-        self.assertIn('healthcheck', s0)
-        self.assertEqual(s0['restart'], 'unless-stopped')
-        self.assertEqual(s0['stop_grace_period'], '30s')
+        assert 'gazebo-network' in s0['networks']
+        assert 'vehicle-network' in s0['networks']
+        assert 'healthcheck' in s0
+        assert s0['restart'] == 'unless-stopped'
+        assert s0['stop_grace_period'] == '30s'
 
 
-class TestMultiVehicleIntegration(unittest.TestCase):
-    """Integration tests that require Docker + running stack.
-    Run with: python -m pytest scripts/tests/test_multi_vehicle.py -m integration
+@pytest.mark.integration
+class TestMultiVehicleIntegration:
+    """Integration tests requiring Docker + running stack.
+    Run with: python -m pytest scripts/tests/ -m integration
     """
 
-    @pytest.mark.integration
     def test_docker_reachable(self):
         import subprocess
 
         result = subprocess.run(['docker', 'ps'], capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, 'Docker daemon not reachable')
+        assert result.returncode == 0, 'Docker daemon not reachable'
 
-    @pytest.mark.integration
     def test_gazebo_container_running(self):
         import subprocess
 
@@ -252,9 +232,8 @@ class TestMultiVehicleIntegration(unittest.TestCase):
             ['docker', 'ps', '--format', '{{.Names}}'], capture_output=True, text=True
         )
         names = [n for n in result.stdout.strip().split('\n') if n]
-        self.assertTrue(any('gazebo' in n for n in names), f'No gazebo container. Found: {names}')
+        assert any('gazebo' in n for n in names), f'No gazebo container. Found: {names}'
 
-    @pytest.mark.integration
     def test_vehicle_containers_running(self):
         import subprocess
 
@@ -262,6 +241,6 @@ class TestMultiVehicleIntegration(unittest.TestCase):
             ['docker', 'ps', '--format', '{{.Names}}'], capture_output=True, text=True
         )
         names = [n for n in result.stdout.strip().split('\n') if n]
-        self.assertGreater(
-            sum(1 for n in names if 'vehicle_' in n), 0, f'No vehicle containers. Found: {names}'
+        assert sum(1 for n in names if 'vehicle_' in n) > 0, (
+            f'No vehicle containers. Found: {names}'
         )
