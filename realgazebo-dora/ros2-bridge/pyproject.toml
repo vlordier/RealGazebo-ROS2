@@ -1,0 +1,10 @@
+[project]
+name = "ros2-bridge"
+version = "0.1.0"
+requires-python = ">=3.8"
+dependencies = ["dora-runtime", "rclpy"]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+where = ["."]

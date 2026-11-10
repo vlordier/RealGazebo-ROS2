@@ -1,0 +1,40 @@
+# Build outputs
+/target
+/build
+/install
+/htmlcov
+/site
+/log
+/__pycache__
+*.egg-info
+.eggs
+node_modules
+*.pyc
+
+# LFS / large files
+*.lib
+*.exe
+*.dll
+*.obj
+*.bin
+*.dat
+*.pt
+*.onnx
+*.pth
+*.safetensors
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.venv
+uv.lock

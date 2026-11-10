@@ -1,0 +1,10 @@
+[project]
+name = "vehicle-monitor"
+version = "0.1.0"
+requires-python = ">=3.8"
+dependencies = ["dora-runtime"]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+where = ["."]

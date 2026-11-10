@@ -1,0 +1,18 @@
+nodes:
+  - id: ros2_bridge
+    build: pip install -e ros2-bridge
+    path: ros2-bridge/ros2_bridge/main.py
+    inputs:
+      tick: dora/timer/millis/100
+    outputs:
+      - vehicle_pose
+      - simulation_time
+
+  - id: vehicle_monitor
+    build: pip install -e vehicle-monitor
+    path: vehicle-monitor/vehicle_monitor/main.py
+    inputs:
+      pose: ros2_bridge/vehicle_pose
+      tick: dora/timer/secs/1
+    outputs:
+      - status

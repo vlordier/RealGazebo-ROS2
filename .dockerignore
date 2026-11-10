@@ -1,0 +1,24 @@
+# Speed up Docker builds by excluding unnecessary files
+.git
+.gitignore
+.gitmodules
+*.md
+*.lock
+*.typed
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+.env
+.python-version
+.editorconfig
+.pre-commit-config.yaml
+AGENTS.md
+log/
+site/
+scripts/legacy/
+
+# Keep docker/ - needed by Dockerfile for entrypoint and configs
+# Keep docs/ - referenced by some build steps
